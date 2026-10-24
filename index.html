@@ -137,7 +137,6 @@ main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
 .stop.todo .stop-name b{color:var(--ink-soft)}
 .stage-tag{min-width:0;max-width:240px;padding:6px 12px;border:2.5px solid var(--ink);border-radius:12px;background:var(--paper);cursor:pointer;
   font:600 1.25rem/1.2 var(--font-kana);color:var(--ink);text-align:center;box-shadow:0 3px 0 var(--ink)}
-.stage-tag.ui{font:700 1rem/1.3 var(--font-ui)}
 .stage-tag.done{background:var(--bg)}
 .stage-tag.now{background:var(--yellow)}
 .stage-tag:disabled{border-style:dashed;box-shadow:none;color:var(--ink-soft);opacity:.7;cursor:default}
@@ -533,12 +532,8 @@ const TRAINS = { h: [8, 8, 10], k: [8, 10, 10] };
 const TRAIN_COLORS = ['var(--mg)', 'var(--mt)', 'var(--nb)'];
 
 /* ================= 路線 ================= */
-// ことばの なかで はじめて でてくる もじ（かける もじ だけ。ことばに でてくる じゅん）
-function freshChars(word, seen) {
-  const out = [];
-  for (const c of word) if (STROKES[c] && !seen.has(c)) { seen.add(c); out.push(c); }
-  return out;
-}
+// ことばに でてくる かける もじ（おなじ もじは 1かい。でてくる じゅん）
+const uniqueWritable = word => [...new Set([...word].filter(c => STROKES[c]))];
 const st2 = s => s.split(',').map(x => x.split(':'));
 const LINES = {
   mg: { id: 'mg', sym: 'MG', kanji: '目黒線', kana: 'めぐろせん', color: 'var(--mg)', hex: '#009CD2', script: 'h', goal: 'ひらがなを かこう',
@@ -551,33 +546,21 @@ const LINES = {
     stations: st2('目黒:めぐろ,白金台:しろかねだい,白金高輪:しろかねたかなわ,三田:みた,芝公園:しばこうえん,御成門:おなりもん,内幸町:うちさいわいちょう,日比谷:ひびや,大手町:おおてまち,神保町:じんぼうちょう,水道橋:すいどうばし,春日:かすが,白山:はくさん,千石:せんごく,巣鴨:すがも,西巣鴨:にしすがも,新板橋:しんいたばし,板橋区役所前:いたばしくやくしょまえ,板橋本町:いたばしほんちょう,本蓮沼:もとはすぬま,志村坂上:しむらさかうえ,志村三丁目:しむらさんちょうめ,蓮根:はすね,西台:にしだい,高島平:たかしまだいら,新高島平:しんたかしまだいら,西高島平:にしたかしまだいら'),
     first: ['c05','c04','c06','c07','c01','c02','c03','c08'] }
 };
-// 1えき＝1ステージ。つぎの えきめいに はじめて でてくる もじを れんしゅうする
-//   wr=もじを かく、rr=もじを おぼえる（よむ）、sn=あたらしい もじが ない（えきめいを かくだけ）、rv=ふくしゅう クイズ
+// 1えき＝1ステージ
+//   sn=つぎの えきめいを ぜんぶ 1かい かく（目黒線・三田線）
+//   rr=えきめいに でてくる カタカナを ぜんぶ おぼえる → クイズ → えきめいを よむ（南北線）
 Object.values(LINES).forEach(line => {
-  const seen = new Set(), read = line.id === 'nb';
   line.stages = line.stations.slice(1).map((_, i) => {
-    const fresh = freshChars(stationName(line, i + 1), seen);
-    if (!fresh.length) return [read ? 'rv' : 'sn'];
-    return [read ? 'rr' : 'wr', fresh.join('')];
+    const name = stationName(line, i + 1);
+    return line.id === 'nb' ? ['rr', uniqueWritable(name).join('')] : ['sn', name];
   });
 });
 const stageType = sg => sg[0];
-function stageLabel(sg) {
-  const t = stageType(sg);
-  if (t === 'wr' || t === 'rr') return sg[1];
-  if (t === 'rv') return 'ふくしゅう';
-  return 'えきめい';
-}
-function stageGoal(sg) {
-  const t = stageType(sg);
-  if (t === 'wr') return `${stageLabel(sg)} を かこう`;
-  if (t === 'rr') return `${stageLabel(sg)} を おぼえよう`;
-  if (t === 'rv') return 'ふくしゅう クイズ';
-  return 'えきの なまえを かこう';
-}
-// そのコースで ここまでに ならった もじ
+const stageLabel = sg => sg[1];
+const stageGoal = sg => stageType(sg) === 'rr' ? `${sg[1]} を おぼえよう` : 'えきの なまえを かこう';
+// そのコースで ここまでに でてきた もじ（クイズの こたえの ちがう えらびしに つかう）
 function learnedUpTo(line, idx) {
-  return line.stages.slice(0, idx + 1).filter(sg => /^(wr|rr)$/.test(stageType(sg))).flatMap(sg => [...sg[1]]);
+  return [...new Set(line.stages.slice(0, idx + 1).flatMap(sg => [...uniqueWritable(sg[1])]))];
 }
 // えきの なまえは ぜんぶ かく（ちいさい もじ や「ー」は さいしょから はいっている）
 function stationName(line, i) { const k = line.stations[i][1]; return line.script === 'k' ? toK(k) : k; }
@@ -1161,7 +1144,7 @@ function openHome() {
 function openParent() {
   const volSeg = key => `<div class="seg" data-vol="${key}">${['けす', 'ちいさい', 'ふつう', 'おおきい'].map((l, i) => `<button type="button" data-v="${i}">${l}</button>`).join('')}</div>`;
   const body = sheet(`<h2>おうちの かたへ</h2>
-    <p>3つのコースは、目黒線＝ひらがなを書く、南北線＝カタカナを読む、三田線＝カタカナを書く、です。次の駅名に初めて出てくる字を練習してから、着いた駅で駅名を書き（南北線は読み）、車両カードを1枚もらいます。</p>
+    <p>3つのコースは、目黒線＝ひらがなを書く、南北線＝カタカナを読む、三田線＝カタカナを書く、です。目黒線・三田線は次の駅名を1字ずつ全部なぞって書けば到着、南北線は駅名のカタカナを覚えてクイズのあと駅名を読めば到着で、車両カードを1枚もらいます。</p>
     <p>駅名に出てこない字は「でんしゃことば」で練習します。言葉を1つ書くごとに車両が1両つながり、編成ができると出発してカードがもらえます。「ヂ」「ヅ」は言葉に入れていないので、じゆうれんしゅうで練習してください。</p>
     <p>うまく書けないときは、お手本を見せながら一緒にやり直し、3回目は必ず合格になります。×や点数は出しません。</p>
     <div class="set-row"><b>BGM</b>${volSeg('bgm')}</div>
@@ -1252,9 +1235,8 @@ function openLine(id) {
     const cls = i <= p ? '' : ' todo';
     let tag = '';
     if (i > 0) {
-      const sg = line.stages[i - 1], lab = stageLabel(sg), ui = !/^(wr|rr)$/.test(stageType(sg));
       const state = i <= p ? 'done' : i === p + 1 ? 'now' : '';
-      tag = `<button class="stage-tag ${state}${ui ? ' ui' : ''}" type="button" data-i="${i - 1}" ${state ? '' : 'disabled'}>${esc(lab)}</button>`;
+      tag = `<button class="stage-tag ${state}" type="button" data-i="${i - 1}" ${state ? '' : 'disabled'}>${esc(stageLabel(line.stages[i - 1]))}</button>`;
     }
     const mark = i === Math.min(p, n) ? `<span class="train">${frontTrain(line.color)}</span>` : '<span class="dot"></span>';
     return `<li class="stop${cls}" style="--lc:${line.color}">${mark}<span class="stop-name"><b>${s[1]}</b><small>${s[0]}</small></span>${tag}</li>`;
@@ -1267,12 +1249,9 @@ function openLine(id) {
 }
 // これから やることを みせる（みとおし）
 function scheduleSteps(line, idx) {
-  const sg = line.stages[idx], t = stageType(sg), steps = [];
-  if (t === 'wr') steps.push(`もじ ${[...sg[1]].length}こ`);
-  else if (t === 'rr') steps.push('おぼえる', 'クイズ');
-  else if (t === 'rv') steps.push('クイズ');
-  if (line.id === 'nb') steps.push('えきの なまえを よむ');
-  else if (stationBlanks(line, idx).length) steps.push('えきの なまえを かく');
+  const steps = stageType(line.stages[idx]) === 'rr'
+    ? ['おぼえる', 'クイズ', 'えきの なまえを よむ']
+    : [`えきの なまえを かく（${stationBlanks(line, idx).length}もじ）`];
   if (idx === st.prog[line.id]) steps.push('カード');
   return `<div class="sched">${steps.map(s => `<span>${s}</span>`).join('<i>→</i>')}</div>`;
 }
@@ -1567,8 +1546,7 @@ function startStage(line, idx) {
   cur.mode = 'line'; cur.line = line; cur.idx = idx;
   const t = stageType(line.stages[idx]);
   go('stage', `${line.kana}　つぎは ${line.stations[idx + 1][1]}`, null);
-  if (t === 'wr') writeStage(line, idx);
-  else if (t === 'sn') stationTask(line, idx);
+  if (t === 'sn') stationTask(line, idx);
   else readStage(line, idx);
 }
 // ことばを 1もじずつ かく ときの うえの ひょうじ（かかない もじは さいしょから はいっている）
@@ -1637,39 +1615,17 @@ function writeSession({ items, top, say, onDone, music = 'write', goalText }) {
   });
   show();
 }
-// あたらしい もじを 1つずつ かく（えきめい・ことばの まえ）
-function charSession(chars, goalText, onDone) {
-  const items = chars.map(c => ({ c }));
-  writeSession({
-    items,
-    top: i => `<div class="pills">${items.map((x, k) => `<span class="pill${k < i ? ' ok' : k === i ? ' now' : ''}">${x.c}</span>`).join('')}</div>`,
-    goalText: i => goalText(items.length - i),
-    say: i => items[i].c,
-    onDone
-  });
-}
-function writeStage(line, idx) {
-  const to = line.stations[idx + 1][1];
-  charSession([...line.stages[idx][1]], n => `あと <b>${n}</b>もじで <b>${to}</b>`, () => stationTask(line, idx));
-}
-
-// 読む ステージ（カタカナ）
+// 読む ステージ（南北線）：えきめいに でてくる カタカナを おぼえて クイズ
 function readStage(line, idx) {
-  const sg = line.stages[idx], t = stageType(sg), v = $('#v-stage');
+  const v = $('#v-stage'), chars = [...line.stages[idx][1]], learned = learnedUpTo(line, idx);
   v.classList.remove('fill');
   bgm('quiz');
-  const learned = learnedUpTo(line, idx);
-  if (t === 'rr') {
-    const chars = [...sg[1]];
-    v.innerHTML = `<div class="intro"><h2>あたらしい カタカナ</h2><p>さわると こえが でるよ。したの ひらがなと おなじ おとだよ</p>
-      <div class="pairs">${chars.map(c => `<button class="pair" type="button" data-c="${c}"><b>${c}</b><span>${toScript(c, 'h')}</span></button>`).join('')}</div>
-      <button class="btn big red" type="button" id="qGo">クイズ スタート</button></div>`;
-    v.querySelectorAll('.pair').forEach(b => b.addEventListener('click', () => speak(b.dataset.c)));
-    v.querySelector('#qGo').addEventListener('click', () => runQuiz(line, idx, makeCharQs(chars, learned, 6)));
-    setTimeout(() => speak('あたらしい カタカナを おぼえよう'), 300);
-  } else {
-    runQuiz(line, idx, makeCharQs(learned, learned, 8));
-  }
+  v.innerHTML = `<div class="intro"><h2>「${esc(stationName(line, idx + 1))}」の カタカナ</h2><p>さわると こえが でるよ。したの ひらがなと おなじ おとだよ</p>
+    <div class="pairs">${chars.map(c => `<button class="pair" type="button" data-c="${c}"><b>${c}</b><span>${toScript(c, 'h')}</span></button>`).join('')}</div>
+    <button class="btn big red" type="button" id="qGo">クイズ スタート</button></div>`;
+  v.querySelectorAll('.pair').forEach(b => b.addEventListener('click', () => speak(b.dataset.c)));
+  v.querySelector('#qGo').addEventListener('click', () => runQuiz(line, idx, makeCharQs(chars, learned, Math.min(8, Math.max(5, chars.length)))));
+  setTimeout(() => speak(`${line.stations[idx + 1][1]}の カタカナを おぼえよう`), 300);
 }
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function sample(pool, n) {
@@ -1806,21 +1762,14 @@ function wordStage(s, i) {
   const list = TWORDS[s], it = list[i];
   cur.mode = 'words'; cur.ws = s;
   go('stage', `でんしゃことば　「${it.w}」`, null);
-  const seen = new Set();
-  list.slice(0, i).forEach(o => freshChars(o.w, seen));
-  const fresh = freshChars(it.w, seen);
-  const writeWord = () => {
-    const blanks = writable(it.w), chars = [...it.w], items = blanks.map(k => ({ c: chars[k] }));
-    writeSession({
-      items,
-      top: k => `${it.e ? `<span class="ws-emo">${it.e}</span>` : ''}${wordPills(it.w, blanks, k)}`,
-      goalText: k => `あと <b>${items.length - k}</b>もじで 1りょう つながるよ`,
-      say: k => k === 0 ? `${it.w}。${items[0].c}` : items[k].c,
-      onDone: () => coupled(s, i)
-    });
-  };
-  if (fresh.length) charSession(fresh, n => `あたらしい もじ あと <b>${n}</b>こ。そのあと「<b>${esc(it.w)}</b>」を かくよ`, writeWord);
-  else writeWord();
+  const blanks = writable(it.w), chars = [...it.w], items = blanks.map(k => ({ c: chars[k] }));
+  writeSession({
+    items,
+    top: k => `${it.e ? `<span class="ws-emo">${it.e}</span>` : ''}${wordPills(it.w, blanks, k)}`,
+    goalText: k => `あと <b>${items.length - k}</b>もじで 1りょう つながるよ`,
+    say: k => k === 0 ? `${it.w}。${items[0].c}` : items[k].c,
+    onDone: () => coupled(s, i)
+  });
 }
 // 1りょう つながる。へんせいが できたら しゅっぱつして カード
 function coupled(s, i) {
