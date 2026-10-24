@@ -721,13 +721,48 @@ const load = () => {
   } catch (e) {}
   return {};
 };
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
-const st = Object.assign({ hm: 0, w: {}, cards: [], prog: {}, words: {}, wscript: 'h', strict: 'normal', free: 'h', freeMode: 'trace', vol: {}, melody: true }, load());
-['mg', 'nb', 'mt'].forEach(k => { if (typeof st.prog[k] !== 'number') st.prog[k] = 0; });
-st.words = Object.assign({ h: 0, k: 0 }, st.words);
-// 駅スタンプ：{ 路線: { 駅のばんごう: 1=なぞって とうちゃく, 2=みて かけた（ぎん）, 3=きいて かけた（きん） } }
-st.stamps = Object.assign({ mg: {}, nb: {}, mt: {} }, st.stamps);
-st.vol = Object.assign({ bgm: 1, sfx: 2 }, st.vol);
+// たりない ところを うめる（ふるい きろく・ファイルから よみこんだ きろくにも つかう）
+function fillSt(o) {
+  const s = Object.assign({ hm: 0, w: {}, cards: [], prog: {}, words: {}, wscript: 'h', strict: 'normal', free: 'h', freeMode: 'trace', vol: {}, melody: true }, o);
+  s.prog = Object.assign({}, s.prog);
+  ['mg', 'nb', 'mt'].forEach(k => { if (typeof s.prog[k] !== 'number') s.prog[k] = 0; });
+  s.words = Object.assign({ h: 0, k: 0 }, s.words);
+  // 駅スタンプ：{ 路線: { 駅のばんごう: 1=なぞって とうちゃく, 2=みて かけた（ぎん）, 3=きいて かけた（きん） } }
+  s.stamps = Object.assign({ mg: {}, nb: {}, mt: {} }, s.stamps);
+  s.vol = Object.assign({ bgm: 1, sfx: 2 }, s.vol);
+  return s;
+}
+const st = fillSt(load());
+// きろくを まるごと いれかえる（ひかえから もどす とき・ファイルを よみこんだ とき）
+function replaceSt(o) { const s = fillSt(o); Object.keys(st).forEach(k => delete st[k]); Object.assign(st, s); }
+// IndexedDB の ひとつの いれもの。keyPath が なければ key を じぶんで わたす
+function idbStore(name, store, keyPath) {
+  let db = null;
+  const open = () => db || (db = new Promise((res, rej) => {
+    try {
+      const r = indexedDB.open(name, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore(store, keyPath ? { keyPath } : undefined);
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    } catch (e) { rej(e); }
+  }));
+  return async (mode, fn) => {
+    const d = await open();
+    return new Promise((res, rej) => {
+      const tx = d.transaction(store, mode), q = fn(tx.objectStore(store));
+      tx.oncomplete = () => res(q && q.result); tx.onerror = () => rej(tx.error);
+    });
+  };
+}
+// きろくの ひかえ：iPad の ホーム画面アプリで localStorage が きえる ことが あるので、IndexedDB にも おく。
+// t（さいごに ほぞんした じこく）が あたらしい ほうを つかう
+const kiroku = idbStore('mojidensha-kiroku', 's');
+let backupOn = false;   // はじめに ひかえと くらべるまでは かかない（あたらしい ひかえを ふるい きろくで うわがき しない）
+const save = () => {
+  st.t = Date.now();
+  const s = JSON.stringify(st);
+  try { localStorage.setItem(KEY, s); } catch (e) {}
+  if (backupOn) kiroku('readwrite', o => o.put(s, 'st')).catch(() => {});
+};
 
 /* ================= おと ================= */
 // 0=けす 1=ちいさい 2=ふつう 3=おおきい
@@ -919,27 +954,11 @@ const bgmStop = () => bgm(null);
 /* ----- 発車メロディ（おうちで よういした 音源。なければ オリジナル） ----- */
 // 音源は この iPad の なか（IndexedDB）だけに ほぞんする。ネットには あげない
 //   target：'st:駅名'（その駅を でるとき）、'line:mg'（その路線）、'common'（ぜんぶ）
+const melStore = idbStore('mojidensha-melody', 'm', 'id');
 const MelDB = {
-  db: null,
-  open() {
-    return this.db || (this.db = new Promise((res, rej) => {
-      try {
-        const r = indexedDB.open('mojidensha-melody', 1);
-        r.onupgradeneeded = () => r.result.createObjectStore('m', { keyPath: 'id' });
-        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
-      } catch (e) { rej(e); }
-    }));
-  },
-  async run(mode, fn) {
-    const db = await this.open();
-    return new Promise((res, rej) => {
-      const tx = db.transaction('m', mode), q = fn(tx.objectStore('m'));
-      tx.oncomplete = () => res(q && q.result); tx.onerror = () => rej(tx.error);
-    });
-  },
-  all() { return this.run('readonly', s => s.getAll()); },
-  put(rec) { return this.run('readwrite', s => s.put(rec)); },
-  del(id) { return this.run('readwrite', s => s.delete(id)); }
+  all() { return melStore('readonly', s => s.getAll()); },
+  put(rec) { return melStore('readwrite', s => s.put(rec)); },
+  del(id) { return melStore('readwrite', s => s.delete(id)); }
 };
 let melodies = [];
 async function loadMelodies() {
@@ -1187,7 +1206,7 @@ function sheet(html, wide) {
   body.scrollTop = 0;
   return body;
 }
-const closeSheet = () => { $('#sheet').hidden = true; };
+const closeSheet = () => { $('#sheet').hidden = true; reloadIfIdle(); };
 $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet' || e.target.closest('[data-close]')) closeSheet(); });
 function overlay(html) { const b = $('#overlayBody'); b.innerHTML = html; $('#overlay').hidden = false; $('#overlay').scrollTop = 0; return b; }
 const closeOverlay = () => { $('#overlay').hidden = true; };
@@ -1229,6 +1248,7 @@ let activeWriter = null;
 const dropWriter = () => { if (activeWriter) { activeWriter.destroy(); activeWriter = null; } };
 function go(v, title, music) {
   view = v;
+  if (v === 'home') reloadIfIdle();
   if (v !== 'stage' && v !== 'free') dropWriter();
   document.querySelectorAll('main > .view').forEach(el => { el.hidden = el.id !== 'v-' + v; });
   $('#back').hidden = v === 'home';
@@ -1245,6 +1265,21 @@ $('#back').addEventListener('click', () => {
   else if (view === 'free' && freeState.writing) openFree();
   else openHome();
 });
+
+/* ================= あたらしい 版 ================= */
+// ホーム画面アプリ：もどって きた ときに あたらしい 版を さがし、とどいたら ホームに いる ときに よみなおす
+// （アプリを とじなくても かわる。かいている とちゅうでは よみなおさない）
+let newVer = false;
+function reloadIfIdle() {
+  if (newVer && view === 'home' && $('#sheet').hidden && $('#overlay').hidden) { save(); location.reload(); }
+}
+try {
+  const sw = navigator.serviceWorker;
+  if (sw && sw.controller) {
+    sw.addEventListener('controllerchange', () => { newVer = true; reloadIfIdle(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) sw.getRegistration().then(r => r && r.update()).catch(() => {}); });
+  }
+} catch (e) {}
 
 /* ================= ホーム ================= */
 function openHome() {
@@ -1293,7 +1328,12 @@ function openParent() {
     <div class="row" style="margin-bottom:10px"><label class="btn sm" for="melFile">音源を読み込む</label>
       <input type="file" id="melFile" accept="audio/*" multiple style="position:absolute;width:1px;height:1px;opacity:0"></div>
     <div id="melList" class="mel-list"></div>
-    <p>記録（はなまる・カード・進んだ駅）は、この iPad のブラウザの中にだけ保存されます。</p>
+    <p>記録（はなまる・カード・進んだ駅・スタンプ）は、この iPad の中にだけ保存されます。Claude アプリの中・Safari・ホーム画面アプリは、それぞれ別の記録です。ホーム画面のアイコンを消すと、そのアプリの記録も消えます。新しい版はアプリを開き直すと自動で入れ替わるので、ホーム画面に追加し直す必要はありません。</p>
+    <p id="recStat"></p>
+    <div class="row" style="margin-bottom:8px"><button class="btn sm" type="button" id="expBtn">記録をファイルに保存</button>
+      <label class="btn sm" for="impFile">ファイルから読み込む</label>
+      <input type="file" id="impFile" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0"></div>
+    <p style="font-size:.85rem;color:var(--ink-soft)">保存したファイルは iPad の「ファイル」に入れておけます。念のための控えや、別の場所（Safari からホーム画面アプリへ など）に記録を移すときに使います。</p>
     <div class="row" style="margin-bottom:14px"><button class="btn sm" type="button" id="resetBtn">きろくを ぜんぶ けす</button></div>
     <p style="font-size:.85rem;color:var(--ink-soft)">書き順のデータ：KanjiVG（© Ulrich Apel, CC BY-SA 3.0, kanjivg.tagaini.net）。BGM と効果音はこのアプリ用に作ったものです。${Object.keys(VOICE).length ? 'こえ：Microsoft Azure AI Speech（七海）の合成音声。' : ''}車両カードの${Object.keys(PHOTOS).length ? '写真は家族で撮影したもの、' : ''}絵は簡略化したイメージです。</p>`);
   const paint = () => {
@@ -1358,6 +1398,36 @@ function openParent() {
     }
   });
   body.querySelector('#strictSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; st.strict = b.dataset.v; save(); paint(); });
+  // 記録の 書き出し・読み込み（ネットには 送らない）
+  const sum = o => `はなまる ${o.hm || 0}・カード ${(o.cards || []).length}まい・進んだ駅 ${Object.values(o.prog || {}).reduce((a, b) => a + (+b || 0), 0)}`;
+  body.querySelector('#recStat').textContent = `いまの記録：${sum(st)}（この記録の場所：${standalone ? 'ホーム画面アプリ' : 'ブラウザ'}）`;
+  body.querySelector('#expBtn').addEventListener('click', async () => {
+    save();
+    const d = new Date(), p2 = n => String(n).padStart(2, '0');
+    const name = `mojidensha-kiroku-${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}.json`;
+    const file = new File([JSON.stringify({ app: 'mojidensha', kiroku: st })], name, { type: 'application/json' });
+    // iPad は 共有シート（「ファイルに保存」）、つかえなければ ダウンロード
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } }
+    catch (e) { if (e.name === 'AbortError') return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  });
+  body.querySelector('#impFile').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    let k = null;
+    try { const o = JSON.parse(await f.text()); if (o && o.app === 'mojidensha' && o.kiroku && Array.isArray(o.kiroku.cards)) k = o.kiroku; } catch (err) {}
+    if (!k) {
+      sheet(`<h2>読み込めませんでした</h2><p style="text-align:center">「記録をファイルに保存」で作ったファイルを選んでください。</p><div class="row"><button class="btn" type="button" data-close>とじる</button></div>`);
+      return;
+    }
+    const b2 = sheet(`<h2>記録を読み込みますか？</h2>
+      <p style="text-align:center">いまの記録（${sum(st)}）を、ファイルの記録（${sum(k)}${k.t ? '、' + esc(new Date(k.t).toLocaleString('ja-JP')) + ' に保存' : ''}）に置き換えます。</p>
+      <div class="row"><button class="btn" type="button" data-close>やめる</button><button class="btn red" type="button" id="doImp">読み込む</button></div>`);
+    b2.querySelector('#doImp').addEventListener('click', () => { replaceSt(k); save(); updateStats(); closeSheet(); openHome(); });
+  });
   body.querySelector('#resetBtn').addEventListener('click', () => {
     const b2 = sheet(`<h2>きろくを ぜんぶ けしますか？</h2><p style="text-align:center">はなまる・カード・すすんだ えきが すべて きえます。</p>
       <div class="row"><button class="btn" type="button" data-close>やめる</button><button class="btn red" type="button" id="doReset">けす</button></div>`);
@@ -2170,6 +2240,11 @@ try { if (navigator.storage && navigator.storage.persist) navigator.storage.pers
 loadMelodies();
 updateStats();
 openHome();
+// ひかえ（IndexedDB）の ほうが あたらしければ そちらに する（localStorage が きえて いた とき など）
+kiroku('readonly', o => o.get('st')).then(s => {
+  const b = s && JSON.parse(s);
+  if (b && (b.t || 0) > (st.t || 0)) { replaceSt(b); updateStats(); if (view === 'home') openHome(); }
+}).catch(() => {}).then(() => { backupOn = true; save(); });
 })();
 </script>
 </body></html>
