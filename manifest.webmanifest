@@ -1,0 +1,21 @@
+{
+  "name": "もじでんしゃ",
+  "short_name": "もじでんしゃ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EDF2F6",
+  "theme_color": "#FFFFFF",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

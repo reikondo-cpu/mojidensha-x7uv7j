@@ -1,0 +1,2014 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="もじでんしゃ"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FFFFFF"><meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}[hidden]{display:none!important}img{max-width:100%}</style>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+</head><body><title>もじでんしゃ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* Layout: iPad 一画面アプリ。ヘッダー帯＋各画面。駅名標・路線図・路線カラーで「電車にのって進む」世界をつくり、
+   書く練習は国語ノートのマス目（十字リーダー）と赤ペンのはなまる。子ども向けにライトテーマ一本に絞る。 */
+:root{
+  --bg:#EDF2F6;
+  --paper:#FFFFFF;
+  --ink:#1F2D3D;
+  --ink-soft:#5B6B7D;
+  --red:#E0463A;
+  --on-dark:#FFFFFF;
+  --yellow:#F5C443;
+  --rule:#A9C3D3;
+  --masu:#7FA5BD;
+  --guide:#DCE4EB;
+  --steel:#C7CDD4;
+  --window:#2C3E50;
+  --scrim:rgba(31,45,61,.55);
+  --mg:#009CD2;
+  --nb:#00AC9B;
+  --mt:#0079C2;
+  --font-ui:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
+  --font-kana:"Klee One","YuKyokasho","Hiragino Mincho ProN",serif;
+  --font-emoji:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 18px/1.6 var(--font-ui);overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+:focus-visible{outline:4px solid var(--yellow);outline-offset:3px}
+#app{height:100%;display:flex;flex-direction:column}
+
+/* header */
+.bar{flex:none;background:var(--paper);border-bottom:3px solid var(--ink)}
+.bar-in{display:flex;align-items:center;gap:12px;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+/* ぜんがめんの とき、Safari が ひだりうえに だす × を よける */
+:root.is-fs .bar-in{padding-left:max(96px,env(safe-area-inset-left,0px))}
+.bar h1{flex:1;min-width:0;margin:0;font:900 1.3rem/1.25 var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat{display:inline-flex;align-items:center;gap:4px;font:900 1.25rem/1 var(--font-ui);font-variant-numeric:tabular-nums}
+.stat svg{width:36px;height:36px}
+.stat .hm-sp,.stat .hm-pt{stroke-width:12}
+.stat .hm-c{display:none}
+.mini-card{width:26px;height:34px;border:3px solid var(--ink);border-radius:5px;background:linear-gradient(var(--mg) 0 34%,var(--paper) 34%)}
+
+main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
+.view{max-width:1100px;margin-inline:auto;padding-block:20px 32px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.view.fill{height:100%;padding-block:14px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45em;min-height:56px;padding:.55em 1.2em;
+  font:700 1.1rem/1.2 var(--font-ui);color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:16px;
+  box-shadow:0 4px 0 var(--ink);cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn.red{background:var(--red);color:var(--on-dark)}
+.btn.go{background:var(--lc,var(--mg));color:var(--on-dark)}
+.btn.big{min-height:68px;font-size:1.4rem;padding-inline:1.6em}
+.btn.sm{min-height:44px;font-size:1rem;padding:.3em .9em;box-shadow:0 3px 0 var(--ink)}
+.btn svg{width:1.4em;height:1.4em;flex:none}
+.btn:disabled{opacity:.4}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}
+.seg{display:inline-flex;border:3px solid var(--ink);border-radius:999px;overflow:hidden;background:var(--paper)}
+.seg button{border:0;background:transparent;font:700 1rem/1 var(--font-ui);padding:0 1.1em;min-height:48px;cursor:pointer;color:var(--ink)}
+.seg button.on{background:var(--ink);color:var(--paper)}
+
+/* 駅名標 */
+.board{--lc:var(--mg);width:min(560px,100%);background:var(--paper);border:3px solid var(--ink);border-radius:14px;overflow:hidden;text-align:center}
+.board-top{display:flex;align-items:center;gap:10px;padding:10px 14px 0}
+.sym{display:inline-grid;place-items:center;min-width:44px;height:44px;padding:0 6px;border:5px solid var(--lc);border-radius:50%;
+  font:900 1rem/1 var(--font-ui);letter-spacing:-.02em;background:var(--paper);color:var(--ink)}
+.board-line{font:700 1rem/1 var(--font-ui);color:var(--ink-soft)}
+.board-name{font:900 clamp(2.4rem,7vw,3.6rem)/1.15 var(--font-ui);letter-spacing:.06em;padding:4px 12px 0;text-wrap:balance;color:var(--ink)}
+.board-kanji{font:700 1.15rem/1.3 var(--font-ui);color:var(--ink-soft);padding-bottom:10px}
+.board-band{display:flex;justify-content:space-between;gap:8px;padding:8px 14px;background:var(--lc);color:var(--on-dark);font:700 1.05rem/1.3 var(--font-ui)}
+.board-band span{min-width:0}
+.next-label{margin:0;font:900 1.5rem/1.2 var(--font-ui);text-align:center}
+/* よてい（これから やること） */
+.sched{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px}
+.sched span{padding:6px 14px;border:3px solid var(--ink);border-radius:12px;background:var(--paper);color:var(--ink);font:900 1.1rem/1.2 var(--font-ui)}
+.sched i{font-style:normal;font-weight:900;color:var(--on-dark)}
+
+/* home */
+.hello{margin:4px 0 16px;font:900 clamp(1.5rem,4vw,2.1rem)/1.3 var(--font-ui);text-wrap:balance}
+.courses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.courses{grid-template-columns:minmax(0,1fr)}}
+.course{--lc:var(--mg);display:flex;flex-direction:column;gap:10px;padding:0;text-align:left;cursor:pointer;color:var(--ink);background:var(--paper);
+  border:3px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink);overflow:hidden}
+.course:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.course-head{display:flex;align-items:center;gap:12px;padding:14px 16px 0}
+.course-head b{display:block;font:900 1.5rem/1.15 var(--font-ui)}
+.course-head small{display:block;font:700 .95rem/1.3 var(--font-ui);color:var(--ink-soft)}
+.course-goal{margin:0 16px;padding:6px 12px;border-radius:10px;background:var(--bg);font:900 1.15rem/1.3 var(--font-ui)}
+.course-now{margin:0 16px;font:700 1rem/1.4 var(--font-ui);color:var(--ink-soft)}
+.course-now b{color:var(--ink);font-size:1.15rem}
+.rail{position:relative;height:16px;margin:2px 16px 16px;border-radius:999px;background:var(--bg);overflow:hidden}
+.rail i{position:absolute;inset:0 auto 0 0;background:var(--lc);border-radius:inherit}
+.tools{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px}
+.tool{display:flex;align-items:center;gap:16px;min-height:104px;padding:14px 18px;text-align:left;cursor:pointer;color:var(--ink);background:var(--paper);
+  border:3px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink)}
+.tool:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.tool b{display:block;font:900 1.4rem/1.2 var(--font-ui)}
+.tool small{display:block;font:500 .95rem/1.4 var(--font-ui);color:var(--ink-soft)}
+.tool .ic{flex:none;width:72px;height:72px;display:grid;place-items:center;border-radius:14px;background:var(--bg);font:600 2.6rem/1 var(--font-kana)}
+.foot{margin-top:22px;display:flex;justify-content:flex-end}
+.linkbtn{background:none;border:0;padding:8px;color:var(--ink-soft);font:700 .95rem var(--font-ui);text-decoration:underline;cursor:pointer}
+
+/* 路線図 */
+.line-top{display:grid;justify-items:center;gap:12px;margin-bottom:22px}
+.route{list-style:none;margin:0 auto;padding:0;max-width:720px}
+.stop{--lc:var(--mg);display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:76px;position:relative}
+.stop::before{content:"";position:absolute;left:22px;top:0;bottom:0;width:12px;background:var(--lc)}
+.stop:first-child::before{top:50%}
+.stop:last-child::before{bottom:50%}
+.stop.todo::before{background:var(--steel)}
+.stop .dot{position:relative;z-index:1;justify-self:center;width:34px;height:34px;border-radius:50%;background:var(--paper);border:6px solid var(--lc)}
+.stop.todo .dot{border-color:var(--steel)}
+.stop .train{position:relative;z-index:2;justify-self:center;width:52px;height:52px}
+.stop .train svg{display:block;width:100%;height:100%}
+.stop-name{min-width:0}
+.stop-name b{display:block;font:900 1.35rem/1.2 var(--font-ui)}
+.stop-name small{display:block;font:700 .9rem/1.3 var(--font-ui);color:var(--ink-soft)}
+.stop.todo .stop-name b{color:var(--ink-soft)}
+.stage-tag{min-width:0;max-width:240px;padding:6px 12px;border:2.5px solid var(--ink);border-radius:12px;background:var(--paper);cursor:pointer;
+  font:600 1.25rem/1.2 var(--font-kana);color:var(--ink);text-align:center;box-shadow:0 3px 0 var(--ink)}
+.stage-tag.ui{font:700 1rem/1.3 var(--font-ui)}
+.stage-tag.done{background:var(--bg)}
+.stage-tag.now{background:var(--yellow)}
+.stage-tag:disabled{border-style:dashed;box-shadow:none;color:var(--ink-soft);opacity:.7;cursor:default}
+
+/* でんしゃことば（へんせい） */
+.consist{max-width:100%;overflow-x:auto;padding:6px 0}
+.consist-in{display:flex;flex-direction:row-reverse;gap:3px;width:max-content;margin-inline:auto;padding-bottom:6px;border-bottom:5px solid var(--steel)}
+.car svg{display:block;width:clamp(56px,8vw,96px);height:auto}
+.stack .car svg{width:clamp(40px,5.4vw,56px)}
+.car.new{animation:couple .6s ease-out .25s both}
+@keyframes couple{from{transform:translateX(-48px)}to{transform:none}}
+.consist.leave{overflow:visible}
+.consist.leave .consist-in{animation:leave 2.6s ease-in forwards}
+@keyframes leave{to{transform:translateX(130vw)}}
+.wlist{display:grid;gap:16px;max-width:900px;margin:0 auto}
+.wtrain b{display:block;margin-bottom:6px;font:900 1.05rem var(--font-ui);color:var(--ink-soft)}
+.wchips{display:flex;flex-wrap:wrap;gap:10px}
+.wemo{font-family:var(--font-emoji);margin-right:6px}
+
+/* 書く */
+.ws{display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;height:100%}
+.ws-top{display:flex;flex-direction:column;align-items:center;gap:6px}
+.ws-row{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+.ws-goal{margin:0;font:700 1rem/1.3 var(--font-ui);color:var(--ink-soft)}
+.ws-goal b{color:var(--ink);font-size:1.15rem}
+.pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.pill{position:relative;display:grid;place-items:center;width:58px;height:58px;border:2.5px solid var(--ink);border-radius:12px;background:var(--paper);
+  font:600 2.3rem/1 var(--font-kana)}
+.pill.now{background:var(--yellow)}
+.pill.ok::after{content:"";position:absolute;inset:4px;border:4px solid var(--red);border-radius:50%;opacity:.85}
+.pill.given{border-color:transparent;background:transparent;color:var(--ink)}
+.pill.given.small{font-size:1.6rem}
+.ws-emo{font:3rem/1 var(--font-emoji)}
+.st-band{--lc:var(--mg);display:flex;align-items:center;gap:10px;padding:6px 14px;border-radius:12px;background:var(--paper);border:3px solid var(--ink);border-bottom:8px solid var(--lc)}
+.ws-body{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;min-height:0}
+.stage-area{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
+.masu{position:relative;width:300px;height:300px;border-radius:4px;background:var(--paper);box-shadow:0 0 0 3px var(--masu),0 8px 0 3px var(--ink)}
+.masu svg,.masu canvas{position:absolute;left:0;top:0;width:100%;height:100%}
+.masu canvas{touch-action:none}
+.masu .cr{stroke:var(--rule);stroke-width:.7;stroke-dasharray:2 2}
+.masu .gd{fill:none;stroke:var(--guide);stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+.masu .an{fill:none;stroke:var(--red);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.masu .num{font:700 6.5px var(--font-ui);fill:var(--ink-soft)}
+.panel{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.model{display:grid;justify-items:center;gap:4px}
+.model-ch{display:grid;place-items:center;width:112px;height:112px;background:var(--paper);border:3px solid var(--masu);border-radius:6px;font:600 4.8rem/1 var(--font-kana)}
+.strokes{margin:0;text-align:center;font-weight:700}
+.strokes b{font-size:1.6rem;color:var(--red);font-variant-numeric:tabular-nums}
+.panel .seg{align-self:center}
+.msg{margin:0;min-height:1.6em;text-align:center;font-weight:900;color:var(--ink);text-wrap:balance}
+@media (orientation:portrait),(max-width:900px){
+  .ws-body{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:18px}
+  .panel{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px}
+  .msg{flex-basis:100%}
+  .model-ch{width:80px;height:80px;font-size:3.4rem}
+}
+
+/* クイズ */
+.intro{display:grid;justify-items:center;gap:16px;text-align:center}
+.intro h2{margin:0;font:900 1.6rem/1.3 var(--font-ui)}
+.intro p{margin:0;color:var(--ink-soft);font-weight:700}
+.pairs{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.pair{display:grid;justify-items:center;gap:2px;width:108px;padding:10px 0 8px;border:3px solid var(--ink);border-radius:16px;background:var(--paper);box-shadow:0 4px 0 var(--ink);cursor:pointer;color:var(--ink)}
+.pair:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.pair b{font:600 4rem/1.1 var(--font-kana)}
+.pair span{font:600 1.5rem/1.2 var(--font-kana);color:var(--ink-soft)}
+.qhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.dots{display:flex;gap:8px;flex-wrap:wrap}
+.dots i{width:20px;height:20px;border-radius:50%;border:2.5px solid var(--ink);background:var(--paper)}
+.dots i.done{background:var(--red);border-color:var(--red)}
+.dots i.now{outline:3px solid var(--yellow);outline-offset:2px}
+.ask{margin:0 0 10px;text-align:center;font:900 1.4rem/1.3 var(--font-ui)}
+.word{width:fit-content;max-width:100%;margin:0 auto;padding:.15em .6em;text-align:center;background:var(--paper);border:3px solid var(--ink);border-radius:22px;
+  font:600 clamp(3rem,10vw,5.4rem)/1.25 var(--font-kana);letter-spacing:.08em}
+.word.long{font-size:clamp(2rem,6vw,3.4rem)}
+.say-big{display:flex;margin:0 auto;width:120px;height:120px;border-radius:50%;padding:0}
+.say-big svg{width:64px;height:64px}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:620px;margin:20px auto 0}
+.choices.three{grid-template-columns:repeat(3,minmax(0,1fr));max-width:760px}
+.choices.list{grid-template-columns:minmax(0,1fr);max-width:620px}
+.choice{position:relative;aspect-ratio:1.3;max-width:100%;padding:0;cursor:pointer;color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:22px;
+  box-shadow:0 5px 0 var(--ink);font:600 clamp(3.2rem,10vw,6rem)/1 var(--font-kana)}
+.choices.three .choice{aspect-ratio:1;font:clamp(3rem,10vw,5.6rem)/1 var(--font-emoji)}
+.choices.list .choice{aspect-ratio:auto;padding:.4em .6em;font-size:clamp(1.6rem,4.6vw,2.4rem);letter-spacing:.06em}
+.choice:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.choice.right::after{content:"";position:absolute;inset:8%;border:9px solid var(--red);border-radius:50%;opacity:.9}
+.choices.list .choice.right::after{inset:4px 12%;border-width:6px}
+.choice.dim{opacity:.35}
+.choice.hint{box-shadow:0 0 0 7px var(--yellow),0 5px 0 var(--ink);animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.04)}}
+
+/* 50音表 */
+.gojuon{overflow-x:auto;padding-block:6px 12px}
+.gojuon-in{display:flex;gap:8px;width:max-content;margin-inline:auto}
+.col{display:flex;flex-direction:column;gap:8px}
+.cell{--c:clamp(50px,calc((min(100vw,1100px) - 112px)/11),82px);position:relative;display:grid;place-items:center;width:var(--c);height:var(--c);padding:0;cursor:pointer;
+  color:var(--ink);background:var(--paper);border:2.5px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);font:600 calc(var(--c) * .6)/1 var(--font-kana)}
+.cell:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.cell.empty{background:transparent;border:2.5px dashed var(--rule);box-shadow:none;cursor:default}
+.mk{position:absolute;right:4px;top:4px;width:15px;height:15px;border:2.5px solid var(--red);border-radius:50%}
+.mk.m2{width:9px;height:9px;right:7px;top:7px;box-shadow:0 0 0 2px var(--paper),0 0 0 4.5px var(--red)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:10px;font-size:.95rem;color:var(--ink-soft)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend .mk{position:relative;right:auto;top:auto;display:inline-block}
+.subhead{margin:18px 0 6px;font:900 1.1rem var(--font-ui);text-align:center}
+
+/* カード */
+.zukan{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.card-btn{display:block;padding:0;border:0;background:none;cursor:pointer;text-align:left}
+.tcard{--lc:var(--mg);position:relative;display:flex;flex-direction:column;width:100%;padding:0;text-align:left;color:var(--ink);background:var(--paper);
+  border:3px solid var(--ink);border-radius:14px;overflow:hidden;box-shadow:0 4px 0 var(--ink)}
+.tcard-band{height:12px;background:var(--lc)}
+.tcard svg{display:block;width:100%;height:auto;padding:8px 6px 0}
+.tcard-txt{padding:4px 10px 10px}
+.tcard-co{display:block;font:700 .8rem/1.3 var(--font-ui);color:var(--ink-soft)}
+.tcard-name{display:block;font:900 1.3rem/1.15 var(--font-ui)}
+.tcard-run{display:block;font:700 .8rem/1.35 var(--font-ui);color:var(--ink-soft)}
+.tcard.locked{background:var(--bg);border-style:dashed;box-shadow:none}
+.tcard.locked .tcard-band{background:var(--steel)}
+.tcard.locked svg{opacity:.18;filter:grayscale(1)}
+.tcard.big{max-width:420px;margin:0 auto}
+.tcard.big .tcard-band{height:20px}
+.tcard.big .tcard-txt{padding:8px 18px 18px}
+.tcard.big .tcard-co{font-size:1rem}
+.tcard.big .tcard-name{font-size:2.2rem}
+.tcard.big .tcard-run{font-size:1rem}
+.tcard-yomi{display:block;margin-top:6px;font:600 1.35rem/1.4 var(--font-kana)}
+.flip{perspective:1200px;width:min(420px,100%);margin:0 auto}
+.flip-in{position:relative;transition:transform .7s ease;transform-style:preserve-3d}
+.flip.open .flip-in{transform:rotateY(180deg)}
+.flip-back,.flip-front{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.flip-front{position:absolute;inset:0;transform:rotateY(180deg)}
+.flip-back{display:grid;place-items:center;min-height:330px;border:3px solid var(--ink);border-radius:14px;cursor:pointer;color:var(--on-dark);
+  background:repeating-linear-gradient(135deg,var(--lc) 0 18px,var(--ink) 18px 36px);font:900 4rem/1 var(--font-ui)}
+
+/* overlays */
+.sheet-bg,.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:var(--scrim);
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.overlay{z-index:25;overflow-y:auto;overflow-x:hidden}
+.sheet{position:relative;width:min(560px,100%);max-height:100%;overflow:auto;padding:24px 22px;background:var(--paper);
+  border:3px solid var(--ink);border-radius:24px;box-shadow:0 8px 0 var(--ink)}
+.sheet.wide{width:min(1040px,100%)}
+.sheet h2{margin:0 56px 12px;text-align:center;font:900 1.3rem/1.3 var(--font-ui);text-wrap:balance}
+.sheet p{text-wrap:pretty}
+.set-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin:0 0 12px}
+.set-row b{font:900 1rem/1.3 var(--font-ui)}
+.mel-list{display:grid;gap:8px;margin-bottom:14px}
+.mel-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:8px;padding:8px 10px;border:2px solid var(--rule);border-radius:12px}
+.mel-name{min-width:0;overflow-wrap:anywhere;font-weight:700}
+.mel-row select{min-height:44px;max-width:180px;font:700 1rem var(--font-ui);color:var(--ink);background:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:0 6px}
+@media (max-width:560px){.mel-row{grid-template-columns:minmax(0,1fr) auto auto}.mel-row select{grid-column:1/-1;max-width:none}}
+@media (max-width:560px){.set-row{grid-template-columns:minmax(0,1fr)}}
+.x{position:absolute;right:12px;top:12px;width:48px;height:48px;border-radius:50%;border:3px solid var(--ink);background:var(--paper);
+  font:900 1.5rem/1 var(--font-ui);cursor:pointer;display:grid;place-items:center;padding:0;z-index:2}
+.stack{display:grid;justify-items:center;gap:16px;width:min(620px,100%)}
+.stack > p{margin:0;text-align:center;font:900 1.5rem/1.35 var(--font-ui);color:var(--on-dark);text-wrap:balance}
+.train-run{width:min(340px,80%);height:auto}
+.train-run.in{animation:arrive 3.2s cubic-bezier(.15,.6,.25,1) both}
+@keyframes arrive{from{transform:translateX(-120vw)}to{transform:none}}
+.kcard{display:grid;justify-items:center;gap:14px}
+.kcard-glyph{width:min(240px,56vw);aspect-ratio:1;max-width:100%;position:relative;background:var(--paper);box-shadow:0 0 0 3px var(--masu)}
+.kcard-glyph svg{width:100%;height:100%;display:block}
+.kcard-glyph .cr{stroke:var(--rule);stroke-width:.7;stroke-dasharray:2 2}
+.kcard-glyph .st{fill:none;stroke:var(--ink);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.kcard-glyph .an{fill:none;stroke:var(--red);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.kcard-glyph .num{font:700 6.5px var(--font-ui);fill:var(--red)}
+.kcard-word{display:flex;align-items:center;gap:14px;font:600 clamp(2rem,6vw,2.6rem)/1.2 var(--font-kana)}
+.kcard-word b{color:var(--red);font-weight:600}
+.emo{font:3.2rem/1 var(--font-emoji)}
+.nav{width:60px;min-height:60px;padding:0;font-size:1.8rem}
+
+/* はなまる */
+.praise{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--scrim);padding:16px}
+.praise-in{display:grid;justify-items:center;gap:6px;max-width:min(520px,100%);padding:20px 28px 26px;background:var(--paper);
+  border:3px solid var(--ink);border-radius:28px;box-shadow:0 8px 0 var(--ink)}
+.praise svg{width:min(260px,58vw);height:auto}
+.hm path,.hm circle{fill:none;stroke:var(--red);stroke-linecap:round;stroke-linejoin:round}
+.hm-sp,.hm-pt{stroke-width:7}
+.hm-c{stroke-width:10}
+.praise.maru .hm-sp,.praise.maru .hm-pt{display:none}
+.praise:not(.maru) .hm-c{display:none}
+#praiseText{margin:0;text-align:center;font:900 1.5rem/1.4 var(--font-ui);text-wrap:balance}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div id="app">
+  <header class="bar"><div class="bar-in">
+    <button id="back" class="btn sm" type="button" hidden>‹ もどる</button>
+    <h1 id="title">もじでんしゃ</h1>
+    <span class="stat" title="もらった はなまる"><span id="hmMini"></span><span id="hmCount">0</span></span>
+    <span class="stat" title="あつめた カード"><span class="mini-card" aria-hidden="true"></span><span id="cardCount">0</span></span>
+    <button id="fsBtn" class="btn sm" type="button" hidden>ぜんがめん</button>
+  </div></header>
+  <main id="main">
+    <section id="v-home" class="view"></section>
+    <section id="v-line" class="view" hidden></section>
+    <section id="v-stage" class="view" hidden></section>
+    <section id="v-words" class="view" hidden></section>
+    <section id="v-zukan" class="view" hidden></section>
+    <section id="v-free" class="view" hidden></section>
+  </main>
+</div>
+
+<div class="sheet-bg" id="sheet" hidden><div class="sheet" id="sheetBody"></div></div>
+<div class="overlay" id="overlay" hidden><div class="stack" id="overlayBody"></div></div>
+<div class="praise" id="praise" hidden>
+  <div class="praise-in"><span id="praiseArt"></span><p id="praiseText"></p></div>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ================= もじ ================= */
+// 50音表（じゆうれんしゅう で つかう）
+const ROWS = [['a','あいうえお'],['ka','かきくけこ'],['sa','さしすせそ'],['ta','たちつてと'],['na','なにぬねの'],['ha','はひふへほ'],
+  ['ma','まみむめも'],['ya','や・ゆ・よ'],['ra','らりるれろ'],['wa','わ・・・を'],['n','ん・・・・']];
+const DROWS = [['ga','がぎぐげご'],['za','ざじずぜぞ'],['da','だぢづでど'],['ba','ばびぶべぼ'],['pa','ぱぴぷぺぽ']];
+const ALLROWS = [...ROWS, ...DROWS];
+const toScript = (c, s) => {
+  const code = c.charCodeAt(0);
+  if (code < 0x3041 || code > 0x30F6) return c;
+  const isK = code >= 0x30A1;
+  if (s === 'k' && !isK) return String.fromCharCode(code + 0x60);
+  if (s === 'h' && isK) return String.fromCharCode(code - 0x60);
+  return c;
+};
+const toK = s => [...s].map(c => toScript(c, 'k')).join('');
+const cells = (row, s) => [...row[1]].map(c => c === '・' ? null : toScript(c, s));
+const rowChars = (row, s) => cells(row, s).filter(Boolean);
+const allChars = s => ALLROWS.flatMap(r => rowChars(r, s));
+const SAME = [['お','を'],['じ','ぢ'],['ず','づ']];
+const sameSound = (a, b) => { a = toScript(a, 'h'); b = toScript(b, 'h'); return SAME.some(([x, y]) => (a === x && b === y) || (a === y && b === x)); };
+
+// 書き順データ（KanjiVG, CC BY-SA 3.0）
+const STROKES = {"あ":{"s":["M31.01,33c0.88,0.88,2.75,1.82,5.25,1.75c8.62-0.25,20-2.12,29.5-4.25c1.51-0.34,4.62-0.88,6.62-0.5","M49.76,17.62c0.88,1,1.82,3.26,1.38,5.25c-3.75,16.75-6.25,38.13-5.13,53.63c0.41,5.7,1.88,10.88,3.38,13.62","M65.63,44.12c0.75,1.12,1.16,4.39,0.5,6.12c-4.62,12.26-11.24,23.76-25.37,35.76c-6.86,5.83-15.88,3.75-16.25-8.38c-0.34-10.87,13.38-23.12,32.38-26.74c12.42-2.37,27,1.38,30.5,12.75c4.05,13.18-3.76,26.37-20.88,30.49"],"n":[[22.51,35.0],[41.51,19.0],[57.51,42.0]]},"ア":{"s":["M23.5,26.25c2.41,1.56,3.98,1.44,8.51,0.75c11.4-1.75,37.77-5.5,48.28-6.78c5.23-0.64,7.99,2.06,2.62,6.04c-6.75,5-13.12,9.5-23.25,16","M53.12,41.12c0.79,1.5,1.02,3.24,0.58,5.28c-4.04,18.48-9.92,31.85-19.92,45.48"],"n":[[20.41,22.13],[44.79,41.75]]},"い":{"s":["M21.5,29.66c2.01,2.17,2.61,4.68,2.17,7.43c-3.09,19.16-1.03,32.01,7.93,41.45c6.12,6.45,6.26,3.14,7.04-5.21","M72.96,36.51c9.44,8.05,17.79,18.82,18.41,33.83"],"n":[[14.96,27.13],[62.21,32.88]]},"イ":{"s":["M69.75,16.75c0.12,1.75-0.34,3.86-1.62,5.5c-10.13,12.87-23.75,29.63-45.63,42.87","M56.38,43.88c1,1.12,1.25,3,1.25,4.62c0,1.62,0,32.75,0,34.62c0,1.87-0.13,9.13-0.13,11.76"],"n":[[61.13,15.13],[50.75,53.63]]},"う":{"s":["M42,15.5c5.62,2.12,9.62,3,12.88,3c8.27,0,8,1.12-0.38,5.5","M33,42.38c2.12,1.12,4.12,2.88,8.5,1.38c4.38-1.5,12.75-7.12,18.5-7c5.75,0.12,10.25,5,10.25,18c0,15.49-8.25,30.24-24.37,41.24"],"n":[[33.5,14.13],[28.75,39.63]]},"ウ":{"s":["M53.25,14.62c1,1.12,1.25,3,1.25,4.62c0,1.62,0,10.76,0,12.64","M26.5,31.25c1,1.12,1.22,3,1.25,4.62c0.09,4.45,0.29,10.95,0.45,16.37c0.07,2.5,0.14,4.77,0.18,6.5","M29.12,35.88c19.38-2.25,40.25-4.25,49-5.5c8.75-1.25,8.28,0.84,6.25,6.88c-5,14.88-20.12,43.5-41,56.62"],"n":[[42.75,15.13],[18.0,27.0],[32.75,32.5]]},"え":{"s":["M40.52,13.25c5.62,2.12,10,3,14.12,3c8.27,0,8,1.12-0.38,5.5","M32.52,45.12c1.88,1.25,4.5,1.75,7.38,0.62c3.29-1.29,17-7.88,21.25-9.88c4.25-2,8.32,0.04,4.38,4.62c-12.26,14.27-27.26,31.52-39.51,44.4c-3.26,3.42-0.58,3.54,1.5,1.37c13.5-14.12,18.12-20.12,23.62-20.12c7.13,0,3.5,16.75,6.75,22.38c3.25,5.63,19.12,3.75,26.12,2.12"],"n":[[33.9,13.5],[25.15,44.38]]},"エ":{"s":["M31.87,35.68c2.32,0.71,5.14,0.66,7.48,0.29c8.57-1.35,22.4-2.85,33.66-3.85c2.26-0.2,4.52-0.19,6.77,0.22","M53.34,38.13c1,1.12,1.31,3,1.25,4.62c-0.18,4.74-0.51,12.89-0.83,22.25c-0.08,2.31-0.16,4.7-0.23,7.12","M19,75.46c3.41,0.94,7.57,0.88,11.01,0.39c17.78-2.48,34.53-3.86,50.55-3.9c3.34-0.01,7.23,0.42,10.46,1.8"],"n":[[25.41,32.63],[45.66,44.13],[14.16,69.5]]},"お":{"s":["M22.88,35.12c1.38,1,3.62,2.38,6,2.12c2.38-0.26,19.62-5.12,21.12-5.74c1.5-0.62,4-1.25,5.88-2","M41.5,16.12c2.25,1,3.59,4.39,3.12,7.38c-2.5,16.12-3.37,45.53-2.25,58.38c0.75,8.62-0.64,10.45-7.12,7.12c-5.13-2.62-13.75-8-13.75-12.38c0-7.5,24.38-23.62,44.75-23.62c17.25,0,25,8.25,25,17.25c0,8.25-9.38,18.88-26.75,21","M73,22.12c5.38,2.62,8.88,5.88,10.62,8.25c2.27,3.08,0.38,4.5-1.12,5"],"n":[[17.25,34.88],[32.75,16.63],[64.38,21.63]]},"オ":{"s":["M19.5,37.85c3.91,1.78,7.55,1.55,11.01,1.02c18.03-2.75,34.4-4.5,50.55-5.41c3.34-0.19,6.35,0.17,10.46,1.38","M60.38,16.38c1.32,1.49,1.65,3.97,1.65,6.12c0,8-0.25,46.23-0.25,58.63c0,20.38-5.88,7.5-9.25,5.5","M60.29,36.38c0,1.62-1.64,3.61-3.62,6c-7.88,9.5-21.12,22.75-34.62,33"],"n":[[15.41,33.0],[50.04,14.88],[45.41,46.13]]},"か":{"s":["M24.62,38.62c1.88,1.62,4.65,2.33,8.62,1c25.5-8.5,29.5-4.13,29.5,7.62c0,9.38-1.24,17.46-4.25,25.25c-7.62,19.76-10.87,17.39-16.12,10.89","M48.5,17.5c1,1.38,1.29,4.7,0.5,7.12c-5,15.25-18.02,40.93-19.62,43.88c-3.12,5.75-6.38,11.88-9.38,16.25","M77.37,31.62c7.5,6.88,13.25,15.75,15,24.88"],"n":[[16.75,37.38],[39.75,16.0],[70.0,29.75]]},"カ":{"s":["M25.5,40.62c1.88,1.25,4.51,1.87,7.12,1.5c17.88-2.5,32.78-4.51,42.5-5.88c7.12-1,10.59,0.24,8.62,7.88c-2.12,8.25-4.47,17.81-9.25,29.12c-10.49,24.88-14.11,14.51-19.24,11.88","M55.88,17.12c0.88,1.62,1.29,3.83,0.75,6.75c-4.25,22.88-15.88,45.25-30.25,58.88"],"n":[[18.13,41.13],[46.25,17.25]]},"き":{"s":["M30.5,30.25c1.88,0.75,4.64,1.06,5.88,0.88c6.75-1,22.25-4.5,26.5-6c2.17-0.76,3.5-1.25,4.88-2.12","M36.25,48.7c2.01,0.85,4.97,1.2,6.29,0.99c7.23-1.13,23.82-5.09,28.37-6.79c2.32-0.86,3.75-1.41,5.22-2.4","M42,14.12c1.5,0.88,3.13,2.94,4,5.12c5.5,13.76,16,29.26,26.37,40.76c7.64,8.47,9.12,9.38-6,3.88","M33.75,83.25c10.62,9.75,27.25,8.62,38.12,5"],"n":[[24.5,29.5],[28.13,48.13],[32.5,13.0],[24.5,77.0]]},"キ":{"s":["M27,40.5c1.75,0.62,4.77,1.09,7.25,0.38c11.75-3.38,30.62-8.13,37.5-9.88c2.62-0.67,6.75-1.12,9-1","M19.5,65.8c2.28,0.84,6.24,1.18,9.46,0.17c17.79-5.59,32.67-9.09,49.17-12.99c3.43-0.81,8.81-1.52,11.74-1.35","M48.87,16.75c2.5,1.75,3.43,3.24,3.88,6.12c2.12,13.62,6.38,45.38,8.25,59.25c0.4,3,1,8.38,1.38,11.12"],"n":[[19.75,37.13],[17.13,61.13],[41.0,16.88]]},"く":{"s":["M60.66,15c0.5,1.62,0.35,5.44-1,7.38c-6.75,9.62-14.3,19.08-18.62,24.5c-4,5-3.79,7.03-0.88,11c5.5,7.5,12.75,18.75,17.62,27.25c1.48,2.59,2.75,4.75,4.5,8.62"],"n":[53.66,12.38]},"ク":{"s":["M50,19.62c0.38,1.5,0.34,3.48-0.5,5.12c-4.12,8.12-7.88,15.5-16.12,24.12","M51.25,28.62c2.62,0.25,5.67-0.39,7.62-0.88c6-1.5,9.75-2.38,15.12-3.88c5.79-1.62,7.53-0.42,5.12,4.88c-10.36,22.88-26.24,44.14-48.61,60.51"],"n":[[42.0,17.13],[54.75,24.63]]},"け":{"s":["M24.67,19.75c1.25,1.5,2.62,3.75,2.12,6.38c-3,15.88-6.5,29.5-4.88,44.62c2.02,18.84,2.25,4.75,6.75-3.5","M53.67,38.62c2.12,1.38,4.28,1.89,6.88,1.5c8.25-1.25,15.39-2.57,20.62-4c2.76-0.74,5.26-1.12,6.88-1.12","M71.67,14.38c2.13,1.37,2.88,3.35,2.88,5.12c0,11.62,0.12,20.38,0.12,30.12c0,20.75-0.62,30.88-12.5,42.25"],"n":[[16.3,18.75],[46.68,36.88],[64.05,13.25]]},"ケ":{"s":["M40.96,17.88c0.44,1.9,0.39,4.42-0.59,6.5c-4.82,10.31-9.21,19.67-18.87,30.62","M37.88,37.62c2.12,0.88,4.15,1.04,6.62,0.5c12.62-2.75,25.5-4.88,35.75-6.5c3.61-0.57,6.25-0.75,9.25-0.5","M64.46,38.88c0.44,1.9,0.5,4.27-0.08,6.5c-3.63,13.75-9.25,31.25-24.63,43.87"],"n":[[32.5,17.38],[41.5,34.75],[56.25,44.0]]},"こ":{"s":["M34.75,26.75c1.12,0.88,2.91,2.01,6,1.5c7.62-1.25,14.11-2.56,22.38-2.62c15.5-0.12,5.88,5-5.75,9","M30,68.12c2.25,14.5,15.26,17.96,31,16.75c6.5-0.5,11.88-1.25,17.62-2.88"],"n":[[28.0,25.88],[23.75,68.13]]},"コ":{"s":["M30.13,35c1.75,1,3.01,2.18,6.5,1.62c14.25-2.25,29.62-4.25,37.38-5.5c9.37-1.51,9.88,0.25,8,7.5c-2.77,10.71-5.25,22.12-7,34.88","M27.5,77.38c2.62,1.12,4.38,1.51,8.25,1c11.38-1.5,22.62-3,33.75-3.38c4-0.13,5.88,0,9.62,0.5"],"n":[[22.88,32.0],[23.88,72.88]]},"さ":{"s":["M27,38.9c2.42,1.33,5.38,1.47,8.32,1.06c8.79-1.24,28.67-7.76,34.15-10.43c2.79-1.36,3.78-1.91,6.28-3.53","M41.5,13.88c1.5,0.88,3.63,2.94,4.5,5.12c5.5,13.75,15.25,27.62,26.87,39.5c7.98,8.15,6.38,10-6,3.12","M35.25,80.5c4.5,11.75,20.88,12.5,38.38,7.5"],"n":[[21.25,38.5],[32.0,13.0],[28.25,77.0]]},"サ":{"s":["M16.5,44.34c2.84,1.27,4.77,1.91,8.93,1.13c17.2-3.22,40.45-5.35,58.53-5.34c4.33,0,6.92,0.37,10.42,0.82","M36.63,23.38c1.12,1.38,1.19,2.5,1.25,4.75c0.25,9,0.38,20.25,0.75,28.88c0.14,3.25,0.38,7.12,0.38,9.25","M69.63,16.62c1.5,2,1.62,2.87,1.62,6.25c0,8.25-0.16,9-0.16,15.88c0,23.25-9.34,42.5-23.21,53"],"n":[[11.88,39.63],[27.0,21.63],[60.63,16.13]]},"し":{"s":["M39.12,17.5c1.25,3.12,0.93,6.74,0.38,10.25c-2.12,13.5-3,26.5-3,39.12c0,27.38,19.88,30.12,45.5,17.25"],"n":[30.87,14.13]},"シ":{"s":["M39.87,19.75c5.14,1.57,9.79,6.01,11.5,8.62","M26,42.62c3.25,0.88,10.25,5.5,12.25,8.13","M33,85c3.75,0.88,7.12,0.49,10.38-1.38c17.87-10.24,32.37-23.87,46.12-42.87"],"n":[[34.0,19.13],[23.38,38.63],[27.38,78.63]]},"す":{"s":["M15.5,37.12c2.88,2.12,6.94,1.51,12.75,0.25c16.12-3.5,36.14-5.38,46.62-6.5c7-0.75,11.88-0.62,17.75,0.12","M57.62,13.38c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,35.12,0,40.75c0,14.62-15.62,16.38-15.62,1.75c0-14.25,18-14.12,18,6.38c0,13.25-7.75,21.5-16,28.38"],"n":[[9.12,35.5],[49.0,14.13]]},"ス":{"s":["M30.13,29.38c1.75,1.5,4.15,1.98,6.62,1.38c13.25-3.25,24.25-5.62,31.25-7.38c7-1.76,8.64,1.16,6.5,5.75c-11.24,24.12-28.37,45.87-53.5,57.25","M61,57.25c11,7.38,21,17,28,28.62"],"n":[[23.63,27.75],[65.76,55.75]]},"せ":{"s":["M16.5,49.93c2.88,2.42,6.86,1.57,12.75,0.53c19-3.34,33-5.72,47.12-7.64c6.99-0.95,11.88-1.21,17.75-0.36","M69.74,17.75c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,17.88,0,23.5c0,25.62-5.75,23.25-11.88,19","M35.62,26.25c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,28.38,0,34c0,14.5,6.38,19.55,20.14,19.55c10.24,0,13.74,0.07,22.61-1.68"],"n":[[10.12,48.5],[61.25,16.5],[27.75,25.25]]},"セ":{"s":["M17,49.38c3.12,1.5,5.04,2.18,8.62,1.38c23.5-5.25,31.24-7.43,50.62-11.62c23.12-5,6.5,7.75-3.25,18.12","M42.38,19.5c2,2.25,2.15,3.5,2.12,6.62c-0.12,17.5-0.88,31.75-0.88,41.12c0,14,3.13,16.99,12.38,17.12c8.38,0.12,14.12,0.12,18,0.12c3.88,0,7.5-0.5,10.5-1.12"],"n":[[13.51,45.13],[34.13,17.63]]},"そ":{"s":["M38.4,22c1.88,1.25,4.98,1.05,7.5,0.38c6.5-1.75,13.25-3.75,19.38-5.38c4.63-1.23,7.18,2.06,3.62,5.25c-12.12,10.87-31.14,24.4-40,30.25c-6.25,4.12-5.88,5.75,1.38,3.88c17.08-4.42,35.96-8.68,50.12-10.38c9.38-1.12,9.62,0.12,0.5,1.38c-15.82,2.17-34.38,14.25-34.38,26.5c0,12.88,11.62,20.38,31.5,16.62"],"n":[31.9,20.5]},"ソ":{"s":["M23.5,25.5c3.92,4.1,7.71,9.93,10.75,17.88","M83.5,21c1.25,2.5,1.3,4.44,0.12,8.5c-5.87,20.38-26.24,49.5-45.62,61.25"],"n":[[20.5,22.38],[74.13,19.5]]},"た":{"s":["M24.38,35.38c1.38,0.62,3.88,1.51,6.38,1.12c6.5-1,16.25-2.88,24.88-4.75c2.64-0.57,5.38-1.5,7.62-2.38","M45,16.88c0.75,1.25,0.87,3.62,0.38,5.25c-6.35,20.94-12.75,36.37-18.88,52.37c-1.36,3.56-4.75,11.75-6,14.62","M56.38,53.25c12.38-2.75,18.25-3.7,23.62-3.12c15.12,1.62-1.12,2.25-4.25,4.88","M54.13,82.25c4.38,7,14.25,8.12,34.5,5.62"],"n":[[16.88,34.88],[35.13,16.25],[52.26,50.63],[46.76,80.0]]},"タ":{"s":["M48.83,19.75c0.43,1.72,0.39,4-0.58,5.89c-4.77,9.34-9.1,17.82-18.63,27.73","M49.75,30.38c2.75,0.5,5,0,7.62-0.62c6.02-1.43,10.5-2.62,15.88-4.12c5.79-1.62,8.22,0.31,5.88,5.62c-10.88,24.62-22.13,43.99-50.13,59.99","M43.38,45.62c6.75,3.5,10.62,7.88,14.75,15.25"],"n":[[41.38,17.25],[54.75,26.0],[45.13,43.5]]},"ち":{"s":["M24.5,32.62c1.38,0.62,3.88,1.51,6.38,1.12c6.5-1,18.25-4.12,26.88-6c2.64-0.57,5.38-1.5,7.62-2.38","M45.62,15.62c0.75,1.25,0.71,3.58,0.38,5.25c-3,15-4.25,22.59-8.38,38.62c-3.25,12.62-5.38,11.12,3.62,4.38c8.29-6.21,19.75-9.5,28.5-9.5c8.62,0,14.58,5.88,14.5,14.5c-0.12,13.5-16.5,20.62-29.88,23.25"],"n":[[20.0,28.88],[36.75,15.5]]},"チ":{"s":["M69.76,15.25c-0.38,2.62-2.01,4.37-3.88,5.38c-7.88,4.25-18.62,9.75-35.5,13.25","M18.5,51.5c2.88,0.88,4.39,1.65,7.88,1.25c22-2.5,36.38-4.25,56.12-4.88c4.88-0.15,7.88,0.51,10.88,1.51","M54.88,30.75c0.88,0.75,1.75,2.49,1.75,4.75c0,6.03,0.03,11.25,0.03,18.27c0,14.98-5.03,29.48-16.53,39.23"],"n":[[61.76,12.63],[13.63,46.75],[47.76,37.63]]},"つ":{"s":["M14,44.75c1.88,1.62,4.68,2.09,8.12,0.62c17.88-7.62,30-11.12,44.88-10.88c12.56,0.21,22.98,7.17,22.87,19.17c-0.18,18.77-24.75,28.71-45.01,32.08"],"n":[9.76,40.38]},"ツ":{"s":["M21.5,31.38c2.38,3,4.5,9.38,4.88,13.88","M45.62,23.75c3.38,3.5,6.62,9.5,7,14.88","M84.62,27.88c0.75,2.25,0.39,5.26-0.75,8c-7.63,18.37-21.25,41.12-46,52.5"],"n":[[16.62,27.13],[38.75,20.88],[75.62,25.75]]},"て":{"s":["M20.5,26.38c1.87,1.62,4.42,1.97,8.12,1.37c21.75-3.5,33-5.12,50.12-8.38c12.34-2.34,13-0.88,0.38,1.38c-17.89,3.19-33.78,19.12-33.78,37.62c0,20.5,17.91,30.25,35.16,30.25"],"n":[16.37,20.0]},"テ":{"s":["M36.5,21.5c2.12,1.25,4.38,1.59,7.25,1.25c10.62-1.25,16.88-2.25,24.62-3.25c3.73-0.48,5.63-0.5,8.13-0.25","M20,44.12c2.88,1,5.26,1.05,7.5,0.75c22.38-3,37-5.62,54.13-6.12c5.62-0.16,7.75,0,10.38,0.62","M58,43.25c0.88,1,1.32,2.63,1.12,4.38c-1.74,15.37-11.62,34.99-24.62,41.87"],"n":[[29.38,19.25],[16.38,39.75],[50.38,49.88]]},"と":{"s":["M35.5,18.38c1.74,0.74,3.62,2.62,4.12,5.37c0.5,2.75,4.75,25,5.38,28.12","M78.12,25.5c0.25,1.88,0.04,4.09-2.25,5.75c-6.37,4.63-13.22,8.49-22.75,15.25c-12.88,9.12-21.62,18.38-21.62,27.5c0,10.12,8.5,13.88,26.88,13.88c6.25,0,14.75-0.12,21.62-1.25"],"n":[[27.87,18.75],[69.25,22.25]]},"ト":{"s":["M44,16.38c1.25,1.12,2.12,3.25,2.12,5.5c0,26.12,0,53.5,0,57.62c0,4.12,0,10.5,0,13.38","M49.24,43.12c11.75,4.12,18.25,10.62,24.5,18.75"],"n":[[37.37,14.38],[52.25,39.5]]},"な":{"s":["M22.88,28.96c1.18,0.58,3.3,1.1,5.47,1.05c5.53-0.13,10.9-0.98,16.52-2.42c4.82-1.23,9.13-3.12,11.38-4.22","M42.99,14c0.63,0.89,0.56,2.52,0.31,3.72c-2.96,14.16-7.95,26.56-14.25,37.87c-2.05,3.69-4.25,7.24-6.55,10.65","M72.26,23.25c6.88,2.5,12.62,5.62,14.75,9.5c4.06,7.41-0.25,3.38-3.5,3.88","M68.88,44.62c-1,1.88-2.14,5.24-1.88,8.25c0.62,7,1.5,13.12,1.5,20.62c0,20-27.88,19.75-27.88,9.38c0-5.62,8.25-8.25,13.88-8.25c8.75,0,21.5,3.25,29.75,11.5"],"n":[[17.63,23.75],[32.51,12.0],[64.63,22.13],[64.26,41.63]]},"ナ":{"s":["M18.5,44.12c2.62,1,4.77,1.17,9.12,0.5c19.38-3,37.75-4.75,52.38-5.62c3.75-0.22,8.88-0.25,11.88,0.12","M53.26,14.5c1.75,1.25,2.75,3,2.75,6c0,3,0.12,21.5,0.12,24.25c0,20-6,37.62-18.38,49.12"],"n":[[14.26,40.5],[45.01,13.75]]},"に":{"s":["M24.53,22.75c1.25,1.5,1.62,3.75,1.12,6.38c-3,15.88-9,32.5-7.38,47.62c2.02,18.84,4.5,5.75,8.5-3.5","M53.2,30.64c0.96,0.79,2.44,1.58,5.1,1.35c6.98-0.61,15.01-3.3,22.04-3.36c13.19-0.11,1.5,3.75-8.39,7.35","M52.53,68c1.76,12.92,11.92,16.01,24.23,14.93c5.08-0.45,8.9-0.8,14.27-2.06"],"n":[[16.79,22.13],[46.91,29.0],[46.41,66.0]]},"ニ":{"s":["M32.63,34.69c2.5,1.19,4.33,1.6,7.45,1.35c11.55-0.91,18.3-2.41,27.04-3.18c2.64-0.23,6.27-0.16,8.39,0.08","M20,74.88c2.62,1,4.78,1.45,9.12,0.75c20.25-3.25,36.5-3.88,52.38-3.88c3.75,0,8,1,11.12,2.38"],"n":[[26.01,33.13],[15.76,68.5]]},"ぬ":{"s":["M25.38,28.5c2,1.38,2.97,3.23,3.38,5.88c1.87,12.18,4.12,23.92,8.54,34.67c1.79,4.36,3.96,8.33,6.84,12.46","M57.12,19.25c0.88,2.12,1.06,3.79,0.62,5.88c-3.12,15-13.14,39.81-18.12,48.62c-11.87,21-20.62,1.25-20.62-4.5c0-22.63,43.75-44.25,62.36-29.59c7.66,6.03,9.8,14.58,9.14,23.34c-2,26.75-32.88,28.38-32.88,16.88c0-9.38,17.38-7.12,27.12-1.12c3.1,1.91,7.25,5.25,9.5,7.5"],"n":[[17.63,27.88],[47.25,17.25]]},"ヌ":{"s":["M33.38,27.62c2.75,1.25,5.38,1.16,8.5,0.62c10.12-1.75,19-3.12,28.62-5c6.67-1.3,7.75-0.12,5.38,5.62c-6.7,16.22-20.63,40.52-48.88,57.89","M44.88,46.38c12,6.75,22.38,15.38,30.62,28.12"],"n":[[27.25,24.38],[35.13,44.5]]},"ね":{"s":["M33.29,14.5c1.62,1.62,2.1,3.21,1.88,5.88c-1.03,11.93-2.06,31.66-2.53,53.12c-0.1,4.62-0.18,9.31-0.22,14","M17.16,37.88c1.62,0.88,3.25,1.38,5.62,0.75c2.14-0.56,7.8-2.31,12.37-4.03c6.26-2.35,6.88-1.47,3.12,3.63c-5.56,7.53-13.02,17.38-18.48,26.77c-5.6,9.62-3.45,8.3,2,3c19.12-18.62,38.5-39.12,54.12-39.12c11.38,0,12.88,11.25,12.88,32.5c0,28.62-30.18,24.88-30.18,16.26c0-9.63,18.73-7.82,28.06-1.88c2.75,1.75,5.88,4.88,7.5,6.75"],"n":[[25.91,13.75],[12.91,34.13]]},"ネ":{"s":["M51.38,12.38c3.38,2.12,8,5.88,11,10.88","M26.88,36.16c2.62,1.46,5.45,1.93,8.5,1.19c10.75-2.6,20.75-4.98,30.88-7.5c6.53-1.62,7.81,1.27,4.62,4.68c-11.63,12.47-22.76,23.35-48.88,37.97","M54.38,54.12c1.38,1.75,1.62,3.5,1.62,6c0,2.5,0,27.5,0,29.38c0,1.88,0,4,0,6.88","M65.38,53.62c12.5,6,19.88,11.75,24.88,18.88"],"n":[[45.25,11.25],[18.88,32.5],[49.25,63.5],[64.75,50.88]]},"の":{"s":["M53.82,28.62c1,1.5,1.34,4.12,0.88,6.62c-1.75,9.5-6.89,25-10.75,33.12c-9.63,20.26-16.55,14.74-24.38-1.98c-9.13-19.5,23.5-48.88,50.63-40.38c32.38,10.15,28,54.62-4.75,60.88"],"n":[46.45,34.88]},"ノ":{"s":["M72.37,25.25c0.75,2,0.92,4.89,0.25,7.25c-7.12,25-25.38,44.75-43.62,56.88"],"n":[63.5,24.25]},"は":{"s":["M24.51,18c1.25,1.5,2.15,4,1.62,6.62c-3.5,17.62-6.98,36.4-4,54.88c2.5,15.5,1.12,2,5.62-6.25","M49.64,37.89c2.41,1.57,4.85,2.16,7.8,1.71c9.36-1.43,17.46-2.94,23.4-4.57c3.12-0.86,5.96-1.29,7.8-1.29","M69.77,16.5c2.25,2.12,2.88,4.12,2.88,6.5c0,2.38,1.5,38.62,1.5,48c0,22.5-30.62,19.62-30.62,10.5c0-9.75,23.88-5.62,29.5-2.88c5.62,2.74,11.98,8.26,13.36,9.38"],"n":[[16.89,17.63],[43.02,36.38],[59.89,16.0]]},"ハ":{"s":["M39.33,36.88c0.38,1.14,0.46,2.88-0.12,4.14c-6.33,13.73-13.33,23.86-22.21,32.23","M65.5,36.38c13,9.12,23.12,22.62,28,33.38"],"n":[[27.76,35.0],[58.51,33.75]]},"ひ":{"s":["M20,25.12c1.25,0.88,3.75,2.25,6.5,1.38c2.75-0.87,7.31-2.38,11.38-4.5c6-3.12,8.42-1.01,4.25,4c-27.13,32.62-23.76,58.5-1.52,62.88c18.07,3.56,37.63-16.38,35.63-56.51c-0.72-14.5-0.17-14.78,4.12-1.75c3.76,11.38,10.26,20.76,16.14,26.5"],"n":[15.25,21.38]},"ヒ":{"s":["M35.38,44.5c1.75,1.38,4.51,2.19,6.88,1.88c10.24-1.38,17.24-2.88,24.24-4.26c3.01-0.59,7.12-1,9.38-0.88","M31,17.62c1.38,1.26,1.88,3.38,1.88,6.13c0,2.75-0.88,44-0.88,47.25c0,9.75,4,14.62,13.75,14.62c6,0,16.38,0.12,21.38,0c5-0.12,9.5-0.62,13.5-1.5"],"n":[[36.88,41.88],[23.88,15.13]]},"ふ":{"s":["M42.63,15.62c3.62,3.38,7.5,5.38,12.74,6.13c9.59,1.37,3.5,3.38-1.88,6.12","M43.63,46.88c1.88,4.62,7.5,9.41,14.25,17.5c10.62,12.74,0.49,30-19.13,21.62","M16.5,73.38c0.75,4,1.88,8.12,5,10.12c1.16,0.74,0.12-3.38,13.25-9.12","M80.13,61.88c5.12,3.38,10.28,7.49,11.38,8.88c6.75,8.5-0.25,4.62-4.62,7.12"],"n":[[36.75,13.88],[37.75,43.88],[13.5,67.63],[69.38,59.13]]},"フ":{"s":["M24.5,30c1.88,1.88,3.5,2.04,6.5,1.62c14.5-2,29-4.38,43.75-6.88c6.82-1.16,10.58,2.29,6.88,9.12c-10.38,19.14-21.25,39.52-50.01,53.64"],"n":[21.63,24.88]},"へ":{"s":["M15,48.75c2.25,1.62,4.67,1.96,7-0.38c3.62-3.62,7.46-6.54,11.25-10.5c5.5-5.75,8.48-4.75,13.12-0.88c12.12,10.12,30.38,25.12,33.38,27.38c3,2.26,12.37,10.38,13.87,11.63"],"n":[9.87,42.75]},"ヘ":{"s":["M15.5,49.02c2.78,1.55,5.39,0.64,6.95-0.9c4.05-4.01,9.47-8.3,12-10.88c3.16-3.23,7.32-5.26,12.01-1.16c11.25,9.82,25.03,21.45,35.78,30.36c4.28,3.55,7.71,6.85,11.25,9.56"],"n":[11.76,43.63]},"ほ":{"s":["M24.51,18.75c1.25,1.5,2.15,4,1.62,6.62c-3.5,17.63-6.98,37.4-4,55.88c2.5,15.5,1.12,2,5.62-6.25","M53.08,21.13c1.9,1.28,3.82,1.76,6.14,1.4c7.36-1.17,13.73-2.4,18.41-3.73c2.46-0.7,4.69-1.05,6.13-1.05","M53.83,44.3c2.21,1.44,4.46,1.98,7.16,1.57c8.59-1.31,15.78-2.44,21.23-3.94c2.87-0.79,5.72-1.18,7.41-1.18","M72.51,23c1.38,1.62,1.62,4.12,1.62,6.5c0,2.38,2,35.12,2,44.5c0,17.5-29.88,17.12-29.88,8c0-9.75,21.38-7.88,29.5-2.88c5.33,3.28,12,8.25,13.38,9.38"],"n":[[17.13,18.13],[46.38,20.5],[45.51,46.0],[66.13,29.38]]},"ホ":{"s":["M22.63,40.38c2.62,1,4.75,1.71,9.12,1.25c17.75-1.88,29.25-2.75,45.38-3.88c3.74-0.26,7.38-0.12,11.12,0.62","M53.75,17.12c1.38,1.88,1.38,4.5,1.38,7.38c0,2.88-0.12,46.62-0.12,51.88c0,23.12-6.25,11.25-9.75,9.62","M27.38,59.38c0.5,9.25-1.38,16.62-6.38,21.88","M73.25,52.75c10.88,9.63,15.5,17.63,16.63,24.87"],"n":[[16.01,38.25],[44.76,15.75],[21.51,57.13],[65.51,51.13]]},"ま":{"s":["M29.83,32.28c2.2,1.15,4.43,1.5,7.14,1.26c11.54-1.04,25.94-3.12,34.66-4.85c2.87-0.57,5.45-0.44,7.13-0.44","M33.83,51.84c2.45,1.61,4.94,1.72,7.94,1.26c9.52-1.46,17.87-3.1,27.03-5.16c3.22-0.72,6.34-1.32,8.21-1.32","M55.81,14c1.52,1.8,1.8,4.57,1.8,7.19c0,2.63,0.46,43.88,0.46,54.25c0,21.3-30.07,19.96-30.07,9.86c0-10.79,25.88-9.93,38.57-3.18c6.12,3.25,11.55,6.38,14.8,9.13"],"n":[[24.26,28.13],[26.63,50.88],[47.26,13.13]]},"マ":{"s":["M21.5,33.75c1.88,1.88,3.5,1.99,6.5,1.62c19.62-2.38,33.5-4,51.25-6.38c6.85-0.92,9.37,1.67,4.38,7.62c-7.12,8.5-17.88,20-28.75,31.62","M43.38,58.88c8.43,6.5,16.6,15.93,20.25,26.25"],"n":[[17.88,27.88],[36.12,59.12]]},"み":{"s":["M32.5,26c1.88,1.75,4.06,1.7,6.88,1.25c3.88-0.62,7.62-1.75,11.88-3.12c4.26-1.37,6.25-0.12,4.5,5.12c-1.75,5.24-6.66,17.39-12,30.12c-13.63,32.51-29.26,29.26-29.26,18.63c0-14.25,20.48-15.36,33-13.5c18.5,2.75,30,6.62,44.38,14.25","M79.38,54.75c0.75,2.38,0.49,4.37,0,6.25c-2.12,8.12-7.5,25-22.12,33.75"],"n":[[26.51,24.88],[71.13,52.0]]},"ミ":{"s":["M41.87,20c10.4,2.57,20.5,6.3,25,10.38","M42,46.88c10.72,2.69,21.11,6.6,25.75,10.88","M36.5,75c15.71,4.49,30.95,11,37.75,18.12"],"n":[[34.63,19.25],[34.38,46.13],[31.88,71.5]]},"む":{"s":["M19.59,31.65c2.1,1.55,4.24,1.66,6.81,1.21c8.17-1.41,15.33-2.98,23.19-4.96c2.76-0.69,5.44-1.27,7.05-1.27","M37.02,15.5c1.62,1.25,2.31,2.88,2.12,5.25c-0.88,11.12-1.5,20.75-4,34.88c-3.61,20.44-19.25,16.99-18.62,7.37c0.5-7.74,6.25-12.86,12.62-13.5c5-0.5,14.28,1.93,5.88,15c-12.62,19.62-11.42,24.51,5.11,25.54c10.98,0.68,19.26,0.72,28.49-0.92c14.15-2.5,7.4-2.63,7.4-11.13","M78.52,36.25c6.88,3.12,11.71,5.95,14.88,10.12c6.25,8.25-1.38,3.62-4.5,4.5"],"n":[[12.9,29.0],[26.65,13.0],[70.4,34.75]]},"ム":{"s":["M53.84,22.5c0.88,1.75,0.78,4.57-0.38,6.88c-9.25,18.38-16.19,30.96-25.25,45.75c-3.75,6.12-3,8.38,4.38,7.12c7.38-1.26,46.62-8.12,49.62-8.88","M72.21,60.12c6.88,6.38,13.62,14.88,16,25.38"],"n":[[45.71,21.0],[66.46,57.25]]},"め":{"s":["M27.48,31.75c1.75,1,2.41,3.09,2.5,5.25c0.5,11.62,2.75,23.5,7.25,31.38c1.39,2.44,5.38,8.5,7.25,10.38","M59.6,19.38c1,1.5,1.35,4.12,0.88,6.62c-2.75,14.62-13.62,37.75-20.1,47.24c-12.28,17.14-16.78,13.14-22.28,0.64c-5.38-15.38,26.4-42.18,53.42-35.28c29.08,8.27,23.96,46.02-7.98,50.15"],"n":[[20.1,30.0],[50.1,18.0]]},"メ":{"s":["M73.38,19.12c0.88,1.75,0.48,4.44-0.38,6.88c-7.75,22.12-21.75,47.62-45,62.88","M39.51,39.5c16.54,7.76,32.12,18,38.5,30.88"],"n":[[64.26,16.0],[33.76,37.38]]},"も":{"s":["M49.17,14.75c1.88,1.88,1.86,4.52,1.12,8c-3,14.25-5,26.62-7,42.12c-2.55,19.73-0.75,29.88,17,29.86c20.25-0.02,28.63-13.11,20.01-35.73","M26.54,34.62c1.12,0.88,2.87,2.21,6,2c11.12-0.75,20-2.12,27.74-3.46c3.88-0.67,5.88-1.17,8.88-1.04","M26.42,53.38c-1.5,4,1,6.75,7.75,6.75c8.75,0,17.62-1,22.88-1.88c2.01-0.33,5.38-1,7.5-1.75"],"n":[[40.55,14.38],[21.3,29.63],[21.8,50.88]]},"モ":{"s":["M27.88,26.19c2.5,1.19,4.33,1.6,7.45,1.35c11.55-0.91,21.93-2.16,32.79-3.93c2.62-0.42,6.27-0.41,8.39-0.17","M17.5,54.38c2.62,1,4.78,1.45,9.12,0.75c20.26-3.25,33.88-5.38,51.64-6.13c3.75-0.16,7.38,0.25,11.12,0.88","M48.76,29.88c1.12,1.62,1.42,3.62,1.42,6.12c0,6.53-0.65,33.56-0.65,35.88c0,7.67,3.09,11.08,10.53,11.76c5.33,0.49,12.31,0.24,16.37,0c4.46-0.26,6.52-0.74,9.59-1.43"],"n":[[20.88,23.63],[13.38,49.38],[42.13,35.38]]},"や":{"s":["M18,49.38c1.88,1.62,5.25,2.5,8.62,0.88c18.51-8.88,35.76-19.38,50.83-19.26c9.02,0.14,16.01,4.13,15.93,12.29c0,8.33-10.88,16.58-24.5,17.83","M47.13,15.88c5.12,0.88,10.41,4.05,11.5,6.62c2.12,5-1,2.38-2.88,2.62","M30,24.38c2.38,1.88,3.28,2.87,3.88,5.25c2.62,10.5,11.12,41.12,14.75,52.5c0.65,2.04,1.88,6.25,2.88,9.38"],"n":[[12.88,44.13],[39.88,13.88],[19.26,25.0]]},"ヤ":{"s":["M18,45.75c2.12,1.62,6.15,2.35,10.12,1.38c18.88-4.62,33.39-7.83,48.88-11.88c22-5.75,1.5,14.25-2.75,20","M38.47,19.38c1.65,1.4,2.54,2.67,3.18,5.21c0.64,2.54,11.95,52.9,12.59,55.57c0.64,2.67,2.16,9.16,3.05,12.46"],"n":[[14.63,40.75],[30.26,19.25]]},"ゆ":{"s":["M21.05,25.38c1.38,1.5,2.02,4.13,1.5,6.25c-2.88,11.75-4,22.25-2.12,35c2.77,18.85,1.12,3.88,3.25-1.5c9-22.75,27.24-34.5,44.38-34.5c16.88,0,21.88,11.38,21.88,20.25c0,27.38-30.88,29.62-43,16.75","M58.42,16.75c2.62,1.75,3.17,3.13,3.5,7.12c0.88,10.5,1.4,18.72,1.62,29.38c0.5,24-6.25,32-12.38,39.25"],"n":[[12.67,22.0],[49.8,15.88]]},"ユ":{"s":["M29.5,35.38c2.38,1.5,5.14,2.08,9.25,1.5c13.25-1.88,18.02-2.4,27.62-4c6.75-1.12,7.78,0.16,6.5,6.38c-2.38,11.5-4.88,24.5-6.5,34.5","M17,76.88c2.75,1.5,4.76,2.05,9.12,1.5c22.62-2.88,36-3.88,54.12-3.88c3.75,0,7.38,0.5,11.12,1.12"],"n":[[23.25,31.88],[13.88,71.75]]},"よ":{"s":["M58.24,35.38c7.5-1.28,13.74-2.63,18.5-4.1c2.5-0.77,4.77-1.15,6.25-1.15","M54.62,13.88c2.25,2.12,2.98,4.13,2.88,6.5c-0.75,17-0.12,34.88,1.39,53.5c1.88,23.07-34.89,20.88-34.89,11.5c0-12,26.25-8,35.98-4.12c8.1,3.23,11.52,4.88,18.52,10.38"],"n":[[61.62,28.88],[45.62,14.63]]},"ヨ":{"s":["M29.13,30.12c2.38,1.5,5.12,1.98,9.25,1.5c14-1.62,26.71-3.04,36.38-4.25c6-0.75,6.88,0.5,6.5,6.38c-1,15.51-1.89,30.63-3.01,42.25","M29.25,52.88c2.38,1.5,5.12,1.98,9.25,1.5c10.5-1.22,22.81-2.29,31.11-3.04c2.77-0.25,5.27,0.04,7.77,0.54","M23.5,78.84c2.75,1.3,4.74,1.68,9.12,1.3c12.5-1.08,29.37-2.9,41.38-2.9c3.38,0,5.62,0,9.38,0.54"],"n":[[23.38,28.0],[22.25,51.75],[19.75,74.0]]},"ら":{"s":["M35.33,15c3.75,3,9.22,4.41,16.5,4.25c11.12-0.25-0.25,2.38-1.25,3.5","M35.83,35.75c-2.14,4.34-2.79,8.67-3.11,13.24c-0.42,5.84-0.31,12.05-2.14,19.13c-3.16,12.27,1.49,4.77,3,3.5c11.88-10,21.7-12.67,32.61-12.49c9.21,0.15,16.85,5.19,16.76,13.88c-0.12,13.6-14.24,21.49-32.49,22.49"],"n":[[28.96,13.75],[27.21,35.25]]},"ラ":{"s":["M38.63,21.06c2.07,1.86,4.43,2.53,8.05,2.15c9.2-0.96,14.34-2.01,21.57-2.95c2.41-0.31,4.13-0.53,6.51-0.19","M26,41.89c2.38,1.7,5.12,2.24,9.25,1.7c14-1.84,31.21-4.95,40.88-6.32c6-0.85,8.14,0.62,6.25,5.72c-6.88,18.62-22,38.25-45.25,48.62"],"n":[[33.13,19.0],[22.75,37.38]]},"り":{"s":["M38.75,25.25c1.25,1.5,2.24,4.03,1.62,6.62c-2.88,12.13-6.29,29.65-4.25,42.38c2,12.5,1.75-0.75,5.62-6.25","M69.37,18.75c2.25,2.12,2.88,4.12,2.88,6.5c0,2.38,0,26.38,0,35.75c0,16.5-5,25.75-12.62,33.12"],"n":[[30.37,25.0],[61.62,17.0]]},"リ":{"s":["M35,18.38c1.12,1.5,1.62,3,1.62,4.88c0,1.88,0,25,0,27c0,2,0,6.12,0,7.75","M71,15.38c1.5,1.25,2.38,3.12,2.38,5.38c0,2.26-0.12,28.88-0.12,32.88c0,19.62-9.5,32.25-21.75,40.38"],"n":[[28.62,15.88],[62.0,13.5]]},"る":{"s":["M34.31,20.38c1.75,1.25,4.62,2.62,8.5,1.5c3.88-1.12,9.62-2.5,15.62-4.62c6-2.12,7.5-0.12,4.38,4.25c-3.12,4.37-18.89,24.62-27.75,34c-8.5,9-13.09,11.89,0.75,3.25c15.62-9.75,43-10.88,43,13.38c0,22.5-40.88,24.5-40.88,12.62c0-11.25,18.12-8.75,24.38-0.38"],"n":[28.94,18.63]},"ル":{"s":["M34.38,31.88c1.12,1.5,1.72,3,1.62,4.88c-1.12,22.88-8.88,40.62-17.5,49.5","M56.51,19.62c1.5,1.25,2.38,3.12,2.38,5.38c0,2.26-0.12,47.62-0.12,51.62c0,10.5,0.52,10.21,9.38,2.75c9.5-8,16.5-14.62,26.38-25.62"],"n":[[29.01,28.5],[50.13,16.88]]},"れ":{"s":["M34.48,13c1.5,1.38,2.83,3.74,2.5,6.38c-0.5,4-2.75,44.5-2.75,52.88c0,8.38,0.12,16.62,0.12,19.5","M16.98,40.75c2.12,1.38,3.74,1.46,7.5,0c4.5-1.75,6.55-2.66,13-5.5c4.25-1.88,4.4,0.24,2.5,3.5c-5.25,9-10.5,16.75-18.88,27.62c-7.55,9.81-6.93,12.85,3.25,3.12c14-13.38,20.34-19.76,33.88-32.5c6.38-6,19.39-12.09,18.14,0.88c-1.02,10.63-1.89,22.13-2.29,30.75c-1.02,21.71,11.53,18,20.15,8.63"],"n":[[27.36,12.88],[11.86,36.25]]},"レ":{"s":["M34.5,19.75c1.5,1.25,2.38,3.12,2.38,5.38c0,2.26-0.12,50.12-0.12,54.12c-0.02,8.75-0.14,8.63,9.36,3.75c13.23-6.79,33.38-22.5,43.25-33.5"],"n":[27.87,16.5]},"ろ":{"s":["M36.95,21.88c1.5,2,4.62,3.62,8.5,2.5c3.88-1.12,8.12-2.25,14.12-4.38c6-2.13,6.53-0.1,3.38,4.25c-7.88,10.88-18,22.75-27.5,35.25c-7.49,9.86-10.68,11.32,2.88,2.25c17.38-11.62,46.62-14,46.62,8.12c0,15.62-16,22.5-32.12,25.12"],"n":[31.08,19.38]},"ロ":{"s":["M25,33.25c1.5,1.25,2.16,3.14,2.38,5.38c0.96,10.07,2.14,23.67,3.14,34.88c0.31,3.4,0.59,6.58,0.86,9.38","M28.13,36.12c9.25-1,37.62-3.12,45.62-4.25c8-1.13,9.57,0.53,8.38,6.62c-2.13,10.89-4.13,21.89-6.75,34.89","M32,78.12c5.38-0.5,33.62-3,36.5-3c2.88,0,7.88-0.25,11.5,0.25"],"n":[[18.38,39.75],[30.51,32.25],[35.13,73.63]]},"わ":{"s":["M38.53,14.75c1.5,1.38,2.22,3.73,2,6.38c-1,11.87-2.75,44.49-2.75,52.87c0,8.38-0.62,16.62-0.62,19.5","M17.53,40.75c2.12,1.38,3.68,1.3,7.5,0c5.88-2,9.8-3.16,16.25-6c4.25-1.88,6.12,0,2.75,4c-6.72,7.96-13,16.5-22.12,27.88c-7.75,9.66-7.54,12.21,3,2.88c21.88-19.38,49.75-35.62,63.5-21c14.36,15.27,1.62,36.62-23.38,42.62"],"n":[[31.16,13.25],[12.41,36.25]]},"ワ":{"s":["M25,23.62c1.5,1.25,2.16,3.14,2.38,5.38c0.96,10.07,0.89,8.17,1.89,19.38c0.31,3.4,0.59,6.58,0.86,9.38","M27.75,26.38c3.12,0.38,5.16,0.22,8.23-0.06c13.77-1.29,27.15-2.32,41.65-3.7c8.04-0.76,9.44,0.51,8.38,6.62c-4.76,27.26-20.64,47.64-43.88,61.51"],"n":[[17.88,25.75],[30.38,22.25]]},"を":{"s":["M28.56,27.87c1.62,1.13,3.17,1.64,6.01,1.12c10.86-1.99,16.74-3.37,24.71-4.72c3.64-0.62,5.65-0.93,8.4-0.75","M49.93,14.38c0.75,1,1.48,3.22,0.38,5.62c-4.62,10.12-10,20.75-17.12,30.25c-9.25,12.33-9.25,11.19,2.12,2.5c9-6.88,23.75-12.12,22.88,19.88","M83.06,39.88c0.62,1.75,0,4-3,5.75c-3,1.75-49.62,24.16-44.75,38.25c3.28,9.48,17.93,9.12,29.98,7.75c4.48-0.51,9.15-1.12,12.4-1.75"],"n":[[21.94,25.88],[39.69,12.75],[76.69,37.38]]},"ヲ":{"s":["M30.24,25.14c2.38,1.7,5.11,2.13,9.25,1.7c12.32-1.29,21.94-2.6,30.48-3.64c2.81-0.34,5.51-0.65,8.14-0.93","M29,46.69c2.25,1.44,4.44,1.9,8.05,1.4c8.19-1.15,19.93-2.64,28.56-3.79c2.38-0.31,4.65-0.62,6.75-0.92","M78,22.88c0.88,2,0.62,4.64,0.12,7c-4.88,22.5-23.5,47.12-44.12,60.74"],"n":[[27.0,20.38],[25.12,43.0],[79.25,18.88]]},"ん":{"s":["M56.35,16.5c0.75,1.75,1.13,5.83-0.38,8.25c-7,11.25-27.22,43.47-33.88,54.37c-9,14.75-7.62,16.25,1.5,1.25c17.86-29.36,32-23.76,32-6.75c0,25,19,26.5,34.25-5"],"n":[45.85,15.88]},"ン":{"s":["M26.5,24.88c5.76,2.15,12.68,8.47,15.75,14.25","M28.62,83.75c2.5,1.62,5.12,0.96,7.75-0.62c20.13-12.13,35-24.63,49.63-41.13"],"n":[[22.37,22.13],[22.5,76.13]]},"が":{"s":["M24.62,38.62c1.88,1.62,4.65,2.33,8.62,1c25.5-8.5,29.5-4.13,29.5,7.62c0,9.38-1.24,17.46-4.25,25.25c-7.62,19.76-10.87,17.39-16.12,10.89","M48.5,17.5c1,1.38,1.29,4.7,0.5,7.12c-5,15.25-18.02,40.93-19.62,43.88c-3.12,5.75-6.38,11.88-9.38,16.25","M77.37,31.62c7.5,6.88,13.25,15.75,15,24.88","M80.5,18.25c2.75,1.75,6,5.38,7.75,8.5","M86.87,13.38c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[16.75,37.38],[39.75,16.0],[70.0,29.75],[72.87,17.25],[79.0,12.13]]},"ガ":{"s":["M25.5,40.62c1.88,1.25,4.51,1.87,7.12,1.5c17.88-2.5,32.78-4.51,42.5-5.88c7.12-1,10.59,0.24,8.62,7.88c-2.12,8.25-4.47,17.81-9.25,29.12c-10.49,24.88-14.11,14.51-19.24,11.88","M55.88,17.12c0.88,1.62,1.29,3.83,0.75,6.75c-4.25,22.88-15.88,45.25-30.25,58.88","M83,19.75c2.75,1.75,6,5.38,7.75,8.5","M89.38,14.88c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[18.13,41.13],[46.25,17.25],[75.38,18.75],[81.5,13.63]]},"ぎ":{"s":["M30.5,30.5c1.88,0.75,4.64,1.06,5.88,0.88c6.75-1,22.25-4.5,26.5-6c2.17-0.76,3.5-1.25,4.88-2.12","M36.25,48.95c2.01,0.85,4.97,1.2,6.29,0.99c7.23-1.13,23.82-5.09,28.37-6.79c2.32-0.86,3.75-1.41,5.22-2.4","M42,14.38c1.5,0.88,3.13,2.94,4,5.12c5.5,13.75,16,29.25,26.38,40.75c7.64,8.47,9.12,9.38-6,3.88","M33.75,83.5c10.62,9.75,27.25,8.62,38.12,5","M77.37,19c2.75,1.75,6,5.38,7.75,8.5","M83.75,14.12c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[24.5,29.5],[28.13,48.13],[32.5,13.0],[24.5,77.0],[69.75,18.0],[75.88,12.88]]},"ギ":{"s":["M27,40.5c1.75,0.62,4.77,1.09,7.25,0.38c11.75-3.38,30.62-8.13,37.5-9.88c2.62-0.67,6.75-1.12,9-1","M19.5,65.8c2.28,0.84,6.24,1.18,9.46,0.17c17.79-5.59,32.67-9.09,49.17-12.99c3.43-0.81,8.81-1.52,11.74-1.35","M48.87,16.75c2.5,1.75,3.43,3.24,3.88,6.12c2.12,13.62,6.38,45.38,8.25,59.25c0.4,3,1,8.38,1.38,11.12","M81.87,15.13c2.75,1.93,6,5.93,7.75,9.37","M88.25,10c2.71,1.73,5.9,5.32,7.62,8.41"],"n":[[19.75,37.13],[17.13,61.13],[41.0,16.88],[74.25,14.0],[80.38,8.88]]},"ぐ":{"s":["M60.66,15c0.5,2.12,0.75,5-1,7.38c-6.97,9.46-14.29,19.09-18.62,24.5c-4,5-3.79,7.03-0.88,11c5.5,7.5,12.75,18.75,17.62,27.25c1.48,2.59,2.75,4.75,4.5,8.62","M73.54,30c2.75,1.75,6,5.38,7.75,8.5","M79.91,25.12c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[53.66,12.38],[65.91,29.0],[72.04,23.88]]},"グ":{"s":["M50,19.62c0.38,1.5,0.34,3.48-0.5,5.12c-4.12,8.12-7.88,15.5-16.12,24.12","M51.25,28.62c2.62,0.25,5.67-0.39,7.62-0.88c6-1.5,9.75-2.38,15.12-3.88c5.79-1.62,7.53-0.42,5.12,4.88c-10.36,22.88-26.24,44.14-48.61,60.51","M83.75,13.5c2.75,1.75,6,5.38,7.75,8.5","M90.13,8.62c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[42.0,17.13],[54.75,24.63],[76.13,12.5],[82.25,7.38]]},"げ":{"s":["M24.91,20.25c1.25,1.5,2.37,3.75,1.88,6.38c-3,15.88-6.5,29.5-4.88,44.62c2.02,18.84,2.25,4.75,6.75-3.5","M53.67,39.12c2.12,1.38,4.28,1.89,6.88,1.5c8.25-1.25,15.39-2.57,20.62-4c2.75-0.75,5.25-1.12,6.88-1.12","M71.67,14.62c2.12,1.38,2.87,3.61,2.87,5.38c0,11.62,0.12,20.38,0.12,30.12c0,20.75-0.62,30.88-12.5,42.25","M86.17,13c2.75,1.75,6,5.38,7.75,8.5","M92.54,8.12c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[16.29,19.25],[46.67,37.38],[64.04,13.75],[78.54,12.0],[84.67,6.88]]},"ゲ":{"s":["M40.96,17.88c0.44,1.9,0.39,4.42-0.59,6.5c-4.82,10.31-9.21,19.67-18.87,30.62","M37.88,37.62c2.12,0.88,4.15,1.04,6.62,0.5c12.62-2.75,25.5-4.88,35.75-6.5c3.61-0.57,6.25-0.75,9.25-0.5","M64.46,38.88c0.44,1.9,0.5,4.27-0.08,6.5c-3.63,13.75-9.25,31.25-24.63,43.87","M83.62,13.94c2.95,1.81,6.43,5.57,8.3,8.81","M90.12,9.12c3.02,1.63,6.58,5,8.5,7.9"],"n":[[32.5,17.38],[41.5,34.75],[56.25,44.0],[76.5,12.75],[82.63,7.88]]},"ご":{"s":["M34.75,27c1.12,0.88,2.91,2.01,6,1.5c7.62-1.25,14.11-2.56,22.38-2.62c15.5-0.12,5.88,5-5.75,9","M30,68.38c2.25,14.5,15.26,17.96,31,16.75c6.5-0.5,11.88-1.25,17.62-2.88","M80.37,16.25c2.75,1.75,6,5.38,7.75,8.5","M86.75,11.38c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[28.0,26.13],[23.75,68.38],[72.75,15.25],[78.88,10.13]]},"ゴ":{"s":["M30.13,35c1.75,1,3.01,2.18,6.5,1.62c14.25-2.25,29.62-4.25,37.38-5.5c9.37-1.51,9.88,0.25,8,7.5c-2.77,10.71-5.25,22.12-7,34.88","M27.5,77.38c2.62,1.12,4.38,1.51,8.25,1c11.38-1.5,22.62-3,33.75-3.38c4-0.13,5.88,0,9.62,0.5","M84.75,15.5c2.75,1.75,6,5.38,7.75,8.5","M90.87,10.38c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[22.88,32.0],[23.88,72.88],[77.13,14.5],[83.0,9.13]]},"ざ":{"s":["M27,39.15c2.42,1.33,5.38,1.47,8.32,1.06c8.79-1.24,28.67-8.01,34.15-10.68c2.79-1.36,3.78-1.91,6.28-3.53","M41.5,14.12c1.5,0.88,3.63,2.95,4.5,5.13c5.5,13.75,15.25,27.63,26.88,39.5c7.98,8.15,6.38,10-6,3.12","M35.25,80.75c4.5,11.75,20.88,12.5,38.38,7.5","M79.88,14.25c2.75,1.75,6,5.38,7.75,8.5","M86.25,9.38c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[21.25,38.75],[32.0,13.25],[28.25,77.25],[72.25,13.25],[78.38,8.13]]},"ザ":{"s":["M16.5,44.34c2.84,1.27,4.77,1.91,8.93,1.13c17.2-3.22,40.45-5.35,58.53-5.34c4.33,0,6.92,0.37,10.42,0.82","M36.63,23.38c1.12,1.38,1.19,2.5,1.25,4.75c0.25,9,0.38,20.25,0.75,28.88c0.14,3.25,0.38,7.12,0.38,9.25","M69.63,16.62c1.5,2,1.62,2.87,1.62,6.25c0,8.25-0.16,9-0.16,15.88c0,23.25-9.34,42.5-23.21,53","M82.75,18.73c2.85,1.78,6.21,5.47,8.03,8.65","M89.5,14.12c2.93,1.57,6.39,4.83,8.25,7.63"],"n":[[11.88,39.63],[27.0,21.63],[60.63,16.13],[75.38,16.88],[81.5,11.75]]},"じ":{"s":["M39.12,17.25c1.25,3.12,0.93,6.74,0.38,10.25c-2.12,13.5-3,26.5-3,39.12c0,27.38,19.88,30.12,45.5,17.25","M64.24,27c2.75,1.75,6,5.38,7.75,8.5","M70.62,22.12c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[30.87,13.88],[56.62,26.0],[62.75,20.88]]},"ジ":{"s":["M39.87,19.75c5.14,1.57,9.79,6.01,11.5,8.62","M26,42.62c3.25,0.88,10.25,5.5,12.25,8.13","M33,85c3.62,1.62,6.5,0.88,10.38-1.38c17.81-10.34,32.37-23.87,46.12-42.87","M78.5,18.98c2.85,1.78,6.21,5.47,8.03,8.65","M85.25,14.38c2.93,1.57,6.39,4.83,8.25,7.63"],"n":[[34.0,19.13],[23.38,38.63],[27.38,78.63],[71.13,17.13],[77.25,12.0]]},"ず":{"s":["M15.5,37.12c2.88,2.12,6.94,1.51,12.75,0.25c16.12-3.5,36.14-5.38,46.62-6.5c7-0.75,11.88-0.62,17.75,0.12","M57.62,13.38c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,35.12,0,40.75c0,14.62-15.62,16.38-15.62,1.75c0-14.25,18-14.12,18,6.38c0,13.25-7.75,21.5-16,28.38","M77,13c2.75,1.75,6,5.38,7.75,8.5","M83.37,8.12c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[9.12,35.5],[49.0,14.13],[69.37,12.0],[75.5,6.88]]},"ズ":{"s":["M30.13,29.38c1.75,1.5,4.15,1.98,6.62,1.38c13.25-3.25,24.25-5.62,31.25-7.38c7-1.76,8.64,1.16,6.5,5.75c-11.24,24.12-28.37,45.87-53.5,57.25","M61,57.25c11,7.38,21,17,28,28.62","M85.38,16.5c2.75,1.75,6,5.38,7.75,8.5","M91.76,11.62c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[23.63,27.75],[65.76,55.75],[77.76,15.5],[83.88,10.38]]},"ぜ":{"s":["M16.5,49.93c2.88,2.42,6.86,1.57,12.75,0.53c19-3.34,32.5-5.34,47.12-7.64c6.97-1.1,11.88-1.21,17.75-0.36","M69.74,17.75c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,17.88,0,23.5c0,25.62-5.75,23.25-11.88,19","M35.62,26.25c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,28.38,0,34c0,14.5,6.38,19.55,20.14,19.55c10.24,0,13.74,0.07,22.61-1.68","M84.5,17.25c2.75,1.75,6,5.38,7.75,8.5","M90.87,12.38c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[10.12,48.5],[61.25,16.5],[27.75,25.25],[76.87,16.25],[83.0,11.13]]},"ゼ":{"s":["M17,49.38c3.12,1.5,5.04,2.18,8.62,1.38c23.5-5.25,31.24-7.43,50.62-11.62c23.12-5,6.5,7.75-3.25,18.12","M42.38,19.5c2,2.25,2.15,3.5,2.12,6.62c-0.12,17.5-0.88,31.75-0.88,41.12c0,14,3.13,16.99,12.38,17.12c8.38,0.12,14.12,0.12,18,0.12c3.88,0,7.5-0.5,10.5-1.12","M83.38,20.25c2.75,1.75,6,5.38,7.75,8.5","M89.76,15.38c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[13.51,45.13],[34.13,17.63],[75.76,19.25],[81.88,14.13]]},"ぞ":{"s":["M38.4,22c1.88,1.25,4.98,1.05,7.5,0.38c6.5-1.75,13.25-3.75,19.38-5.38c4.63-1.23,7.18,2.06,3.62,5.25c-12.12,10.87-31.14,24.4-40,30.25c-6.25,4.12-5.88,5.75,1.38,3.88c17.08-4.42,35.96-8.68,50.12-10.38c9.38-1.12,9.62,0.12,0.5,1.38c-15.82,2.17-34.38,14.25-34.38,26.5c0,12.88,11.62,20.38,31.5,16.62","M81.78,26.75c2.75,1.75,6,5.38,7.75,8.5","M88.15,21.88c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[31.9,20.5],[74.4,28.0],[80.28,21.13]]},"ゾ":{"s":["M23.5,26.65c3.83,4.02,7.54,9.72,10.5,17.5","M83,21.9c1.25,2.5,1.3,4.44,0.12,8.5c-5.87,20.37-26.24,49-45.62,60.75","M86.25,10.65c2.75,1.75,6,5.38,7.75,8.5","M92.62,5.77c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[20.0,22.77],[73.63,21.77],[78.63,9.65],[84.75,5.27]]},"だ":{"s":["M24.38,35.38c1.38,0.62,3.88,1.51,6.38,1.12c6.5-1,16.25-2.88,24.88-4.75c2.64-0.57,5.38-1.5,7.62-2.38","M45,16.88c0.75,1.25,0.87,3.62,0.38,5.25c-6.35,20.94-12.75,36.37-18.88,52.37c-1.36,3.56-4.75,11.75-6,14.62","M56.38,53.25c12.38-2.75,18.25-3.7,23.62-3.12c15.12,1.62-1.12,2.25-4.25,4.88","M54.13,82.25c4.38,7,14.25,8.12,34.5,5.62","M76,22.5c2.75,1.75,6,5.38,7.75,8.5","M82.38,17.62c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[16.88,34.88],[35.13,16.25],[52.26,50.63],[46.76,80.0],[68.38,21.5],[74.51,16.38]]},"ダ":{"s":["M48.83,19.75c0.43,1.72,0.39,4-0.58,5.89c-4.77,9.34-9.1,17.82-18.63,27.73","M49.75,30.38c2.5,0.62,5.67-0.14,7.62-0.62c6-1.5,10.5-2.62,15.88-4.12c5.79-1.62,8.22,0.31,5.88,5.62c-10.88,24.62-22.13,43.99-50.13,59.99","M43.38,45.62c6.75,3.5,10.62,7.88,14.75,15.25","M83.62,14.19c2.95,1.81,6.43,5.57,8.3,8.81","M90.12,9.38c3.02,1.63,6.58,5,8.5,7.9"],"n":[[41.38,17.25],[54.75,26.0],[45.13,43.5],[76.5,13.0],[82.63,8.13]]},"ぢ":{"s":["M24.5,32.88c1.38,0.62,3.88,1.51,6.38,1.12c6.5-1,18.25-4.12,26.88-6c2.64-0.57,5.38-1.5,7.62-2.38","M45.63,15.88c0.75,1.25,0.71,3.58,0.38,5.25c-3,15-4.25,22.59-8.38,38.62c-3.26,12.63-5.38,11.13,3.62,4.37c8.29-6.21,19.75-9.5,28.5-9.5c8.62,0,14.58,5.88,14.5,14.5c-0.12,13.5-16.5,20.62-29.88,23.25","M74.63,21.75c2.75,1.75,6,5.38,7.75,8.5","M81,16.88c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[20.0,29.13],[36.75,15.75],[67.0,20.75],[73.13,15.63]]},"ヂ":{"s":["M70,15.25c-0.38,2.62-2.26,4.37-4.12,5.38c-7.88,4.25-18.62,9.75-35.5,13.25","M18.5,51.5c2.88,0.88,4.39,1.65,7.88,1.25c22-2.5,36.38-4.25,56.12-4.88c4.88-0.15,7.88,0.51,10.88,1.51","M54.88,30.75c0.88,0.75,1.75,2.49,1.75,4.75c0,6.03,0.03,11.25,0.03,18.27c0,14.98-5.03,29.48-16.53,39.23","M79.88,25.73c2.85,1.78,6.21,5.47,8.03,8.65","M86.63,21.12c2.93,1.57,6.39,4.83,8.25,7.63"],"n":[[61.76,12.63],[13.63,46.75],[47.76,37.63],[73.76,23.38],[79.63,18.5]]},"づ":{"s":["M14,44.75c1.88,1.62,4.68,2.09,8.12,0.62c17.88-7.62,30-11.12,44.88-10.88c12.56,0.21,22.98,7.17,22.87,19.17c-0.18,18.77-24.75,28.71-45.01,32.08","M81,18c2.75,1.75,6,5.38,7.75,8.5","M87.38,13.12c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[9.38,40.38],[73.38,17.0],[79.51,11.88]]},"ヅ":{"s":["M21.5,30.62c2.38,3,5,9.38,5.38,13.88","M45.87,23c3.38,3.5,6.62,9.5,7,14.88","M84.62,27.62c0.75,2.25,0.39,5.26-0.75,8c-7.63,18.38-21.25,41.38-46,52.76","M86.5,14.58c2.61,1.91,5.7,5.88,7.36,9.3","M92.68,9.62c2.73,1.8,5.95,5.53,7.69,8.75"],"n":[[16.62,27.13],[38.75,20.88],[75.62,25.75],[79.5,12.88],[85.37,8.0]]},"で":{"s":["M20.5,26.38c1.87,1.62,4.42,1.97,8.12,1.37c21.75-3.5,33-5.12,50.12-8.38c12.34-2.34,13-0.88,0.38,1.38c-17.89,3.19-33.78,19.12-33.78,37.62c0,20.5,17.91,30.25,35.16,30.25","M75,41.75c2.75,1.75,6,5.38,7.75,8.5","M81.37,36.88c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[16.5,20.38],[67.37,40.75],[73.5,35.63]]},"デ":{"s":["M36.5,21.5c2.12,1.25,4.38,1.59,7.25,1.25c10.62-1.25,16.88-2.25,24.62-3.25c3.73-0.48,5.63-0.5,8.13-0.25","M20,44.12c2.88,1,5.26,1.05,7.5,0.75c22.38-3,37-5.62,54.13-6.12c5.62-0.16,7.75,0,10.38,0.62","M58,43.25c0.88,1,1.32,2.63,1.12,4.38c-1.74,15.37-11.62,34.99-24.62,41.87","M84.25,16.98c2.85,1.78,6.21,5.47,8.03,8.65","M91,12.38c2.93,1.57,6.39,4.83,8.25,7.63"],"n":[[29.38,19.25],[16.38,39.75],[50.38,49.88],[76.88,15.13],[83.0,10.0]]},"ど":{"s":["M35.5,18.38c1.74,0.74,3.62,2.62,4.12,5.37c0.5,2.75,4.75,25,5.38,28.12","M78.12,25.5c0.25,1.88,0.04,4.09-2.25,5.75c-6.37,4.63-13.21,8.49-22.75,15.25c-12.88,9.12-21.62,18.38-21.62,27.5c0,10.12,8.5,13.88,26.88,13.88c6.25,0,14.75-0.12,21.62-1.25","M84.24,14.5c2.75,1.75,6,5.38,7.75,8.5","M90.62,9.62c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[27.87,18.75],[69.25,22.25],[76.62,13.5],[82.75,8.38]]},"ド":{"s":["M44,16.38c1.25,1.12,2.12,3.25,2.12,5.5c0,26.12,0,53.5,0,57.62c0,4.12,0,10.5,0,13.38","M49.24,43.12c11.75,4.12,18.25,10.62,24.5,18.75","M66.87,26.75c2.75,1.75,6,5.38,7.75,8.5","M73.24,21.88c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[37.37,14.38],[52.25,39.5],[59.25,25.75],[65.37,21.38]]},"ば":{"s":["M24.75,17.75c1.25,1.5,1.9,4.25,1.38,6.88c-3.5,17.62-6.98,36.4-4,54.88c2.5,15.5,1.12,2,5.62-6.25","M49.88,37.89c2.41,1.57,4.85,2.41,7.8,1.96c9.36-1.43,17.21-3.19,23.15-4.82c3.12-0.86,5.96-1.29,7.8-1.29","M69.75,16.5c2.26,2.12,2.88,4.12,2.88,6.5c0,2.38,1.5,38.62,1.5,48c0,22.5-30.62,19.62-30.62,10.5c0-9.75,23.88-5.62,29.5-2.88c5.62,2.74,12,8.25,13.38,9.38","M84.75,15.25c2.75,1.75,6,5.38,7.75,8.5","M91.13,10.38c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[16.88,17.63],[43.01,36.38],[59.88,16.0],[77.13,14.25],[83.26,9.13]]},"バ":{"s":["M39.08,36.62c0.38,1.14,0.38,2.84-0.12,4.14c-5.46,13.99-13.08,24.12-21.96,32.49","M65.5,36.38c13,9.12,23.12,22.62,28,33.38","M81.13,21c2.75,1.75,6,5.38,7.75,8.5","M87.5,16.12c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[27.76,35.0],[58.51,33.75],[73.51,20.0],[79.63,15.63]]},"び":{"s":["M20,25.12c1.25,0.88,3.75,2.25,6.5,1.38c2.75-0.87,7.31-2.38,11.38-4.5c6-3.12,8.42-1.01,4.25,4c-27.13,32.62-23.76,58.5-1.52,62.88c18.07,3.56,37.63-16.38,35.63-56.51c-0.72-14.5-0.17-14.78,4.12-1.75c3.76,11.38,10.26,20.76,16.14,26.5","M86.5,13.5c2.75,1.75,6,5.38,7.75,8.5","M92.87,8.62c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[18.37,17.63],[78.87,12.5],[85.0,7.38]]},"ビ":{"s":["M35.38,44.5c1.75,1.38,4.51,2.19,6.88,1.88c10.24-1.38,17.24-2.88,24.24-4.26c3.01-0.59,7.12-1,9.38-0.88","M31,17.62c1.38,1.26,1.88,3.38,1.88,6.13c0,2.75-0.88,44-0.88,47.25c0,9.75,4,14.62,13.75,14.62c6,0,16.38,0.12,21.38,0c5-0.12,9.5-0.62,13.5-1.5","M78.13,26.25c2.75,1.75,6,5.38,7.75,8.5","M84.5,21.38c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[36.88,41.88],[23.88,15.13],[70.51,25.25],[76.63,20.88]]},"ぶ":{"s":["M42.12,15.62c3.62,3.38,7.5,5.38,12.75,6.12c9.59,1.37,3.5,3.38-1.88,6.12","M43.12,46.88c1.88,4.62,7.5,9.41,14.25,17.5c10.62,12.75,0.5,30-19.12,21.62","M16.5,73.88c0.75,4,1.88,8.12,5,10.12c1.16,0.74,0.12-3.38,13.25-9.12","M79.62,61.88c5.5,3.38,10.28,7.49,11.38,8.88c6.75,8.5-0.25,4.62-4.62,7.12","M73.62,16.25c2.75,1.75,6,5.38,7.75,8.5","M80,11.38c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[36.25,13.88],[37.25,43.88],[13.0,67.63],[68.88,59.13],[66.0,15.25],[72.13,10.13]]},"ブ":{"s":["M24.5,30c1.88,1.88,3.5,2.04,6.5,1.62c14.5-2,29-4.38,43.75-6.88c6.82-1.16,10.58,2.29,6.88,9.12c-10.38,19.14-21.25,39.52-50.01,53.64","M86,15.63c2.61,1.93,5.7,5.93,7.36,9.37","M92.06,10.5c2.82,1.78,6.15,5.48,7.94,8.66"],"n":[[21.63,24.88],[78.13,14.75],[85.25,9.63]]},"べ":{"s":["M15,48.75c2.25,1.62,5,1.38,7.62-1c3.89-3.52,6.12-5.75,10.62-9.88c5.88-5.37,8.49-4.75,13.14-0.87c12.12,10.12,30.38,25.12,33.38,27.38c3,2.26,12.37,10.37,13.87,11.62","M66.76,26.75c2.75,1.75,6,5.38,7.75,8.5","M73.13,21.88c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[9.88,42.75],[59.13,25.75],[65.26,20.63]]},"ベ":{"s":["M15.5,49c2.75,1.5,5.33,0.62,6.88-0.88c4-3.88,9.38-8.5,11.88-11c3.12-3.12,7.23-5.08,11.87-1.12c11.13,9.5,26.25,22.5,36.87,31.12c4.23,3.43,7.62,6.62,11.12,9.25","M66.88,27c2.75,1.75,6,5.38,7.75,8.5","M73.26,22.12c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[11.76,43.63],[59.26,26.0],[65.38,21.63]]},"ぼ":{"s":["M24.51,18.75c1.25,1.5,2.15,4,1.62,6.62c-3.5,17.63-6.98,37.4-4,55.88c2.5,15.5,1.12,2,5.62-6.25","M53.08,21.13c1.9,1.28,3.82,1.76,6.14,1.4c7.36-1.17,13.73-2.4,18.41-3.73c2.46-0.7,4.69-1.05,6.13-1.05","M53.83,44.3c2.21,1.44,4.46,1.98,7.16,1.57c8.59-1.31,15.78-2.44,21.23-3.94c2.87-0.79,5.72-1.18,7.41-1.18","M72.51,23c1.38,1.62,1.62,4.12,1.62,6.5c0,2.38,2,35.12,2,44.5c0,17.5-29.88,17.12-29.88,8c0-9.75,21.38-7.88,29.5-2.88c5.33,3.28,12,8.25,13.38,9.38","M87.51,26c2.75,1.75,6,5.38,7.75,8.5","M93.88,21.12c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[17.13,18.13],[46.38,20.5],[45.51,46.0],[66.13,29.38],[79.88,27.0],[86.01,21.38]]},"ボ":{"s":["M22.63,40.38c2.62,1,4.75,1.71,9.12,1.25c17.75-1.88,29.25-2.75,45.38-3.88c3.74-0.26,7.38-0.12,11.12,0.62","M53.75,17.12c1.38,1.88,1.38,4.5,1.38,7.38c0,2.88-0.12,46.62-0.12,51.88c0,23.12-6.25,11.25-9.75,9.62","M27.38,59.38c0.5,9.25-1.38,16.62-6.38,21.88","M73.51,53c10.87,9.62,15.5,17.62,16.62,24.88","M72.63,17.5c2.75,1.75,6,5.38,7.75,8.5","M79.01,12.62c3.06,1.57,6.68,4.82,8.62,7.62"],"n":[[16.01,38.25],[44.76,15.75],[21.51,57.13],[65.51,51.13],[65.26,16.0],[71.38,11.38]]},"ぱ":{"s":["M24.51,18c1.25,1.5,2.15,4,1.62,6.62c-3.5,17.62-6.98,36.4-4,54.88c2.5,15.5,1.12,2,5.62-6.25","M49.64,37.89c2.41,1.57,4.85,2.16,7.8,1.71c9.36-1.43,17.46-2.94,23.4-4.57c3.12-0.86,5.96-1.29,7.8-1.29","M69.77,16.5c2.25,2.12,2.88,4.12,2.88,6.5c0,2.38,1.5,38.62,1.5,48c0,22.5-30.62,19.62-30.62,10.5c0-9.75,23.88-5.62,29.5-2.88c5.62,2.74,11.98,8.26,13.36,9.38","M91.01,24.38c-9.62,0-9.25-14.25,0-14.25c9.76-0.01,9.5,14.25,0,14.25"],"n":[[16.89,17.63],[43.02,36.38],[59.89,16.0],[88.02,31.75]]},"パ":{"s":["M39.08,36.62c0.38,1.14,0.38,2.84-0.12,4.14c-5.46,13.99-13.08,24.12-21.96,32.49","M65.5,36.38c13,9.12,23.12,22.62,28,33.38","M86,30.12c-9.62,0-9.25-14.25,0-14.25c9.76,0.01,9.5,14.25,0,14.25"],"n":[[27.76,35.0],[58.51,33.75],[83.01,37.5]]},"ぴ":{"s":["M20,25.12c1.25,0.88,3.75,2.25,6.5,1.38c2.75-0.87,7.31-2.38,11.38-4.5c6-3.12,8.42-1.01,4.25,4c-27.13,32.62-23.76,58.5-1.52,62.88c18.07,3.56,37.63-16.38,35.63-56.51c-0.72-14.5-0.17-14.78,4.12-1.75c3.76,11.38,10.26,20.76,16.14,26.5","M93.87,22.12c-9.62,0-9.25-14.25,0-14.25c9.75,0.01,9.5,14.25,0,14.25"],"n":[[16.62,20.88],[89.12,29.13]]},"ピ":{"s":["M35.38,44.5c1.75,1.38,4.51,2.19,6.88,1.88c10.24-1.38,17.24-2.88,24.24-4.26c3.01-0.59,7.12-1,9.38-0.88","M31,17.62c1.38,1.26,1.88,3.38,1.88,6.13c0,2.75-0.88,44-0.88,47.25c0,9.75,4,14.62,13.75,14.62c6,0,16.38,0.12,21.38,0c5-0.12,9.5-0.62,13.5-1.5","M83,32.88c-9.62,0-9.25-14.25,0-14.25c9.76-0.01,9.5,14.25,0,14.25"],"n":[[36.88,41.88],[23.88,15.13],[80.01,40.25]]},"ぷ":{"s":["M42.13,15.62c3.62,3.38,7.5,5.38,12.74,6.13c9.59,1.37,3.5,3.38-1.88,6.12","M43.13,46.88c1.88,4.62,7.5,9.41,14.25,17.5c10.62,12.74,0.49,30-19.13,21.62","M16.5,73.88c0.75,4,1.88,8.12,5,10.12c1.16,0.74,0.12-3.38,13.25-9.12","M79.63,61.88c5.5,3.38,10.28,7.49,11.38,8.88c6.75,8.5-0.25,4.62-4.62,7.12","M80.87,26.62c-9.62,0-9.25-14.25,0-14.25c9.76,0.01,9.5,14.25,0,14.25"],"n":[[36.25,13.88],[37.25,43.88],[13.0,67.63],[68.88,59.13],[75.0,33.13]]},"プ":{"s":["M24.5,30c1.88,1.88,3.5,2.04,6.5,1.62c14.5-2,29-4.38,43.75-6.88c6.82-1.16,10.58,2.29,6.88,9.12c-10.38,19.14-21.25,39.52-50.01,53.64","M92.62,23.88c-9.62,0-9.25-14.25,0-14.25c9.76-0.01,9.5,14.25,0,14.25"],"n":[[21.63,24.88],[89.63,31.25]]},"ぺ":{"s":["M15,48.75c2.25,1.62,4.67,1.96,7-0.38c3.62-3.62,7.46-6.54,11.25-10.5c5.5-5.75,8.48-4.75,13.12-0.88c12.12,10.12,30.38,25.12,33.38,27.38c3,2.26,12.38,10.38,13.88,11.63","M73.63,36.75c-9.62,0-9.25-14.25,0-14.25c9.75,0,9.5,14.25,0,14.25"],"n":[[9.88,42.75],[65.63,43.0]]},"ペ":{"s":["M15.5,49.25c2.75,1.5,5.33,0.62,6.88-0.88c4-3.88,9.12-8.75,11.62-11.25c3.12-3.12,7.23-5.08,11.87-1.12c11.13,9.5,26.25,22,36.87,30.62c4.23,3.43,7.62,6.62,11.12,9.25","M72.74,36.12c-9.62,0-9.25-14.25,0-14.25c9.76,0.01,9.5,14.25,0,14.25"],"n":[[11.5,43.63],[69.75,43.5]]},"ぽ":{"s":["M24.51,19c1.25,1.5,2.15,4,1.62,6.62c-3.5,17.62-6.98,37.4-4,55.88c2.5,15.5,1.12,2,5.62-6.25","M53.08,21.38c1.9,1.28,3.82,1.76,6.14,1.4c7.36-1.17,13.73-2.4,18.41-3.73c2.46-0.7,4.69-1.05,6.13-1.05","M53.83,44.55c2.21,1.44,4.46,1.98,7.16,1.57c8.59-1.31,15.78-2.44,21.23-3.94c2.87-0.79,5.72-1.18,7.41-1.18","M72.51,23.25c1.38,1.62,1.62,4.12,1.62,6.5c0,2.38,2,35.12,2,44.5c0,17.5-29.88,17.12-29.88,8c0-9.75,21.38-7.88,29.5-2.88c5.33,3.28,12,8.25,13.38,9.38","M95.13,34.5c-9.62,0-9.25-14.25,0-14.25c9.75,0,9.5,14.25,0,14.25"],"n":[[17.13,18.38],[46.38,20.75],[46.76,43.13],[66.13,29.63],[92.01,41.88]]},"ポ":{"s":["M22.63,40.38c2.62,1,4.75,1.71,9.12,1.25c17.75-1.88,29.25-2.75,45.38-3.88c3.74-0.26,7.38-0.12,11.12,0.62","M53.75,17.12c1.38,1.88,1.38,4.5,1.38,7.38c0,2.88-0.12,46.62-0.12,51.88c0,23.12-6.25,11.25-9.75,9.62","M27.38,59.38c0.5,9.25-1.38,16.62-6.38,21.88","M73.51,53c10.87,9.62,15.5,17.62,16.62,24.88","M79.75,25.62c-9.62,0-9.25-14.25,0-14.25c9.76,0.01,9.5,14.25,0,14.25"],"n":[[16.01,38.25],[44.76,15.75],[21.51,57.13],[65.51,51.13],[76.76,33.0]]}};
+for (const k in STROKES) { const n = STROKES[k].n; if (n.length && typeof n[0] === 'number') STROKES[k].n = [n]; }
+
+// れいの ことば: もじ|ことば|え
+const W = {};
+`あ|あり|🐜
+い|いぬ|🐶
+う|うさぎ|🐰
+え|えんぴつ|✏️
+お|おにぎり|🍙
+か|かに|🦀
+き|きりん|🦒
+く|くるま|🚗
+け|けーき|🎂
+こ|こいのぼり|🎏
+さ|さかな|🐟
+し|しか|🦌
+す|すいか|🍉
+せ|せっけん|🧼
+そ|そり|🛷
+た|たこ|🐙
+ち|ちょうちょ|🦋
+つ|つき|🌙
+て|てがみ|✉️
+と|とり|🐦
+な|なす|🍆
+に|にんじん|🥕
+ぬ|ぬいぐるみ|🧸
+ね|ねこ|🐱
+の|のこぎり|🪚
+は|はな|🌸
+ひ|ひこうき|✈️
+ふ|ふね|🚢
+へ|へび|🐍
+ほ|ほし|⭐
+ま|まど|🪟
+み|みかん|🍊
+む|むし|🐛
+め|めがね|👓
+も|もも|🍑
+や|やま|⛰️
+ゆ|ゆき|⛄
+よ|よる|🌃
+ら|らいおん|🦁
+り|りんご|🍎
+る|るすばん|🏠
+れ|れっしゃ|🚂
+ろ|ろうそく|🕯️
+わ|わに|🐊
+を|ほんを よむ|📖
+ん|てんとうむし|🐞
+が|がっこう|🏫
+ぎ|ぎゅうにゅう|🥛
+ぐ|ぐー|✊
+げ|げーむ|🎮
+ご|ごりら|🦍
+ざ|ざりがに|🦞
+じ|じてんしゃ|🚲
+ず|ずぼん|👖
+ぜ|かぜ|🌬️
+ぞ|ぞう|🐘
+だ|だんご|🍡
+ぢ|はなぢ|
+づ|こづつみ|📦
+で|でんしゃ|🚃
+ど|どんぐり|🌰
+ば|ばなな|🍌
+び|えび|🦐
+ぶ|ぶどう|🍇
+べ|べんとう|🍱
+ぼ|ぼうし|👒
+ぱ|ぱん|🍞
+ぴ|ぴあの|🎹
+ぷ|ぷりん|🍮
+ぺ|ぺんぎん|🐧
+ぽ|ぽすと|📮
+ア|アヒル|🦆
+イ|イルカ|🐬
+ウ|ウインク|😉
+エ|エビ|🦐
+オ|オレンジ|🍊
+カ|カメラ|📷
+キ|キウイ|🥝
+ク|クッキー|🍪
+ケ|ケーキ|🎂
+コ|コアラ|🐨
+サ|サンドイッチ|🥪
+シ|シャツ|👕
+ス|スプーン|🥄
+セ|ランドセル|🎒
+ソ|ソフトクリーム|🍦
+タ|タクシー|🚕
+チ|チーズ|🧀
+ツ|ツリー|🎄
+テ|テレビ|📺
+ト|トマト|🍅
+ナ|ナッツ|🥜
+ニ|ニワトリ|🐔
+ヌ|ヌードル|🍜
+ネ|ネクタイ|👔
+ノ|ノート|📓
+ハ|ハンバーガー|🍔
+ヒ|ヒヨコ|🐤
+フ|フライパン|🍳
+ヘ|ヘリコプター|🚁
+ホ|ホットドッグ|🌭
+マ|マイク|🎤
+ミ|ミルク|🥛
+ム|ハム|🥓
+メ|メロン|🍈
+モ|モノレール|🚝
+ヤ|ヤシ|🌴
+ユ|ユーフォー|🛸
+ヨ|ヨット|⛵
+ラ|ラッパ|🎺
+リ|リボン|🎀
+ル|ルビー|💎
+レ|レモン|🍋
+ロ|ロケット|🚀
+ワ|ワッフル|🧇
+ヲ||
+ン|パン|🍞
+ガ|ガソリン|⛽
+ギ|ギター|🎸
+グ|グローブ|🧤
+ゲ|ゲーム|🎮
+ゴ|ゴリラ|🦍
+ザ|ザリガニ|🦞
+ジ|ジュース|🧃
+ズ|ズボン|👖
+ゼ|ゼリー|🍮
+ゾ|ゾウ|🐘
+ダ|ダンス|💃
+ヂ||
+ヅ||
+デ|デパート|🏬
+ド|ドーナツ|🍩
+バ|バナナ|🍌
+ビ|ビル|🏢
+ブ|ブロッコリー|🥦
+ベ|ベッド|🛏️
+ボ|ボール|⚽
+パ|パンダ|🐼
+ピ|ピザ|🍕
+プ|プール|🏊
+ペ|ペンギン|🐧
+ポ|ポテト|🍟`.split('\n').forEach(l => { const [c, w, e] = l.split('|'); W[c] = { w: w || '', e: e || '' }; });
+// でんしゃことば：えきめいに でてこない もじを、でんしゃの ことばで れんしゅう（1ご＝1りょう）
+const TWORDS = {
+  h: 'れっしゃ|🚆,めぐろ|🚉,きっぷを かう|🎫,ずし|🚉,のりば|🚉,ぎんざ|🚇,えきべん|🍱,ねりま|🚉,しゅっぱつ|🚦,えびな|🚉,おみやげ|🎁,そうてつ|🚆,けいきゅう|🚃,ごたんだ|🚉,きしゃぽっぽ|🚂,へいわじま|🚉,あきはばら|🚉,かいさつで ぴっ|💳,ぬまぶくろ|🚉,すいかの ぺんぎん|🐧,ほんこまごめ|🚇,せんろは つづく|🛤️,きぼうがおか|🚉,ぜんぶの えき|🗾,ゆうらくちょう|🚉,はなぢ|',
+  k: 'スイカ|💳,ブレーキ|🛑,ギア|⚙️,ボタン|🔘,ゲート|🚧,ブザー|🔔,ホームドア|🚪,ノーズ|🚄,モノレール|🚝,カヌー|🛶,ヘッドライト|💡,テールライト|🔴,ヒーター|♨️,スピード|💨,ポイント|🛤️,ガタンゴトン|🚃,ソニック|🚄,ユリカモメ|🚝,ヨコハマ|🌉,コンセント|🔌,キップヲ カウ|🎫,リゾート|🏝️,ディーゼル|🚂,エレベーター|🛗,スーツケース|🧳,スペーシア|🚄,ビスタカー|🚃,パンタグラフ|⚡'
+};
+for (const s in TWORDS) TWORDS[s] = TWORDS[s].split(',').map(x => { const [w, e] = x.split('|'); return { w, e: e || '' }; });
+// へんせいの ながさ（なんりょう つないだら しゅっぱつ するか）
+const TRAINS = { h: [8, 8, 10], k: [8, 10, 10] };
+const TRAIN_COLORS = ['var(--mg)', 'var(--mt)', 'var(--nb)'];
+
+/* ================= 路線 ================= */
+// ことばの なかで はじめて でてくる もじ（かける もじ だけ。ことばに でてくる じゅん）
+function freshChars(word, seen) {
+  const out = [];
+  for (const c of word) if (STROKES[c] && !seen.has(c)) { seen.add(c); out.push(c); }
+  return out;
+}
+const st2 = s => s.split(',').map(x => x.split(':'));
+const LINES = {
+  mg: { id: 'mg', sym: 'MG', kanji: '目黒線', kana: 'めぐろせん', color: 'var(--mg)', hex: '#009CD2', script: 'h', goal: 'ひらがなを かこう',
+    stations: st2('目黒:めぐろ,不動前:ふどうまえ,武蔵小山:むさしこやま,西小山:にしこやま,洗足:せんぞく,大岡山:おおおかやま,奥沢:おくさわ,田園調布:でんえんちょうふ,多摩川:たまがわ,新丸子:しんまるこ,武蔵小杉:むさしこすぎ,元住吉:もとすみよし,日吉:ひよし,新綱島:しんつなしま,新横浜:しんよこはま'),
+    first: ['c01','c02','c03','c08','c05','c04','c06','c07'] },
+  nb: { id: 'nb', sym: 'N', kanji: '南北線', kana: 'なんぼくせん', color: 'var(--nb)', hex: '#00AC9B', script: 'k', goal: 'カタカナを よもう',
+    stations: st2('目黒:めぐろ,白金台:しろかねだい,白金高輪:しろかねたかなわ,麻布十番:あざぶじゅうばん,六本木一丁目:ろっぽんぎいっちょうめ,溜池山王:ためいけさんのう,永田町:ながたちょう,四ツ谷:よつや,市ケ谷:いちがや,飯田橋:いいだばし,後楽園:こうらくえん,東大前:とうだいまえ,本駒込:ほんこまごめ,駒込:こまごめ,西ケ原:にしがはら,王子:おうじ,王子神谷:おうじかみや,志茂:しも,赤羽岩淵:あかばねいわぶち'),
+    first: ['c06','c07','c05','c04','c01','c02','c03','c08'] },
+  mt: { id: 'mt', sym: 'I', kanji: '三田線', kana: 'みたせん', color: 'var(--mt)', hex: '#0079C2', script: 'k', goal: 'カタカナを かこう',
+    stations: st2('目黒:めぐろ,白金台:しろかねだい,白金高輪:しろかねたかなわ,三田:みた,芝公園:しばこうえん,御成門:おなりもん,内幸町:うちさいわいちょう,日比谷:ひびや,大手町:おおてまち,神保町:じんぼうちょう,水道橋:すいどうばし,春日:かすが,白山:はくさん,千石:せんごく,巣鴨:すがも,西巣鴨:にしすがも,新板橋:しんいたばし,板橋区役所前:いたばしくやくしょまえ,板橋本町:いたばしほんちょう,本蓮沼:もとはすぬま,志村坂上:しむらさかうえ,志村三丁目:しむらさんちょうめ,蓮根:はすね,西台:にしだい,高島平:たかしまだいら,新高島平:しんたかしまだいら,西高島平:にしたかしまだいら'),
+    first: ['c05','c04','c06','c07','c01','c02','c03','c08'] }
+};
+// 1えき＝1ステージ。つぎの えきめいに はじめて でてくる もじを れんしゅうする
+//   wr=もじを かく、rr=もじを おぼえる（よむ）、sn=あたらしい もじが ない（えきめいを かくだけ）、rv=ふくしゅう クイズ
+Object.values(LINES).forEach(line => {
+  const seen = new Set(), read = line.id === 'nb';
+  line.stages = line.stations.slice(1).map((_, i) => {
+    const fresh = freshChars(stationName(line, i + 1), seen);
+    if (!fresh.length) return [read ? 'rv' : 'sn'];
+    return [read ? 'rr' : 'wr', fresh.join('')];
+  });
+});
+const stageType = sg => sg[0];
+function stageLabel(sg) {
+  const t = stageType(sg);
+  if (t === 'wr' || t === 'rr') return sg[1];
+  if (t === 'rv') return 'ふくしゅう';
+  return 'えきめい';
+}
+function stageGoal(sg) {
+  const t = stageType(sg);
+  if (t === 'wr') return `${stageLabel(sg)} を かこう`;
+  if (t === 'rr') return `${stageLabel(sg)} を おぼえよう`;
+  if (t === 'rv') return 'ふくしゅう クイズ';
+  return 'えきの なまえを かこう';
+}
+// そのコースで ここまでに ならった もじ
+function learnedUpTo(line, idx) {
+  return line.stages.slice(0, idx + 1).filter(sg => /^(wr|rr)$/.test(stageType(sg))).flatMap(sg => [...sg[1]]);
+}
+// えきの なまえは ぜんぶ かく（ちいさい もじ や「ー」は さいしょから はいっている）
+function stationName(line, i) { const k = line.stations[i][1]; return line.script === 'k' ? toK(k) : k; }
+const writable = word => [...word].map((c, i) => STROKES[c] ? i : -1).filter(i => i >= 0);
+function stationBlanks(line, idx) { return line.id === 'nb' ? [] : writable(stationName(line, idx + 1)); }
+
+/* ================= 車両カード ================= */
+// id|会社|形式|よみ|はしるところ|帯色|車体色|かたち(c=通勤,s=新幹線,e=特急,m=モノレール)|屋根色
+const NAVY = '#1C2B4B', STEEL = '#C7CDD4', WHITE = '#F5F5F2';
+const CARDS = `c01|東急|3000系|とうきゅう さんぜんけい|めぐろせん|#009CD2|${STEEL}|c
+c02|東急|3020系|とうきゅう さんぜんにじゅっけい|めぐろせん|#009CD2|${STEEL}|c
+c03|東急|5080系|とうきゅう ごせんはちじゅっけい|めぐろせん|#009CD2|${STEEL}|c
+c04|都営|6300形|とえい ろくせんさんびゃくがた|みたせん|#0079C2|${STEEL}|c
+c05|都営|6500形|とえい ろくせんごひゃくがた|みたせん|#0079C2|${STEEL}|c
+c06|東京メトロ|9000系|とうきょうメトロ きゅうせんけい|なんぼくせん|#00AC9B|${STEEL}|c
+c07|埼玉高速鉄道|2000系|さいたまこうそくてつどう にせんけい|なんぼくせん・さいたまこうそくてつどうせん|#00AC9B|${STEEL}|c
+c08|相鉄|21000系|そうてつ にまんいっせんけい|めぐろせん・そうてつせん||${NAVY}|c
+c09|相鉄|20000系|そうてつ にまんけい|とうよこせん・そうてつせん||${NAVY}|c
+c10|相鉄|12000系|そうてつ いちまんにせんけい|JRせん・そうてつせん||${NAVY}|c
+c11|相鉄|9000系|そうてつ きゅうせんけい|そうてつせん||${NAVY}|c
+c12|相鉄|10000系|そうてつ いちまんけい|そうてつせん|#1D5CA8|${STEEL}|c
+c13|相鉄|11000系|そうてつ いちまんいっせんけい|そうてつせん|#1D5CA8|${STEEL}|c
+c14|東急|5050系|とうきゅう ごせんごじゅっけい|とうよこせん|#DA0442|${STEEL}|c
+c15|東急|5000系|とうきゅう ごせんけい|でんえんとしせん|#20A288|${STEEL}|c
+c16|東急|2020系|とうきゅう にせんにじゅっけい|でんえんとしせん|#20A288|${WHITE}|c
+c17|東急|6000系|とうきゅう ろくせんけい|おおいまちせん|#F18C43|${STEEL}|c
+c18|東急|6020系|とうきゅう ろくせんにじゅっけい|おおいまちせん|#F18C43|${WHITE}|c
+c19|東急|9000系|とうきゅう きゅうせんけい|おおいまちせん|#F18C43|${STEEL}|c
+c20|東急|9020系|とうきゅう きゅうせんにじゅっけい|おおいまちせん|#F18C43|${STEEL}|c
+c21|東急|1000系|とうきゅう せんけい|いけがみせん・とうきゅうたまがわせん|#EE86A7|${STEEL}|c
+c22|東急|7000系|とうきゅう ななせんけい|いけがみせん・とうきゅうたまがわせん|#EE86A7|${STEEL}|c
+c23|都営|5500形|とえい ごせんごひゃくがた|あさくさせん|#E85298|${STEEL}|c
+c24|都営|10-300形|とえい いちまんさんびゃくがた|しんじゅくせん|#6CBB5A|${STEEL}|c
+c25|都営|12-000形|とえい いちまんにせんがた|おおえどせん|#B6007A|${STEEL}|c
+c26|都営|12-600形|とえい いちまんにせんろっぴゃくがた|おおえどせん|#B6007A|${STEEL}|c
+c27|東京メトロ|1000系|とうきょうメトロ せんけい|ぎんざせん|#FF9500|#F4B400|c
+c28|東京メトロ|2000系|とうきょうメトロ にせんけい|まるのうちせん|#F62E36|#E8383D|c
+c29|東京メトロ|13000系|とうきょうメトロ いちまんさんぜんけい|ひびやせん|#B5B5AC|${STEEL}|c
+c30|東京メトロ|15000系|とうきょうメトロ いちまんごせんけい|とうざいせん|#009BBF|${STEEL}|c
+c31|東京メトロ|05系|とうきょうメトロ ゼロごけい|とうざいせん|#009BBF|${STEEL}|c
+c32|東京メトロ|16000系|とうきょうメトロ いちまんろくせんけい|ちよだせん|#00BB85|${STEEL}|c
+c33|東京メトロ|10000系|とうきょうメトロ いちまんけい|ゆうらくちょうせん・ふくとしんせん|#C1A470|${STEEL}|c
+c34|東京メトロ|17000系|とうきょうメトロ いちまんななせんけい|ゆうらくちょうせん・ふくとしんせん|#C1A470|${STEEL}|c
+c35|東京メトロ|18000系|とうきょうメトロ いちまんはっせんけい|はんぞうもんせん|#8F76D6|${STEEL}|c
+c36|東京メトロ|08系|とうきょうメトロ ゼロはちけい|はんぞうもんせん|#8F76D6|${STEEL}|c
+c37|JR東日本|E235系|ジェイアール イー にひゃくさんじゅうごけい|やまのてせん|#9ACD32|${STEEL}|c
+c38|JR東日本|E233系|ジェイアール イー にひゃくさんじゅうさんけい|ちゅうおうせん かいそく|#F15A22|${STEEL}|c
+c39|JR東日本|E233系|ジェイアール イー にひゃくさんじゅうさんけい|けいひんとうほくせん|#00B2E5|${STEEL}|c
+c40|JR東日本|E231系|ジェイアール イー にひゃくさんじゅういちけい|そうぶせん かくえきていしゃ|#FFD400|${STEEL}|c
+c41|JR東日本|E235系|ジェイアール イー にひゃくさんじゅうごけい|よこすかせん・そうぶかいそくせん|#0067C0|${STEEL}|c
+c42|JR東日本|E233系|ジェイアール イー にひゃくさんじゅうさんけい|さいきょうせん・そうてつせん|#00AC9A|${STEEL}|c
+c43|JR東日本|E259系|ジェイアール イー にひゃくごじゅうきゅうけい|なりたエクスプレス|#C8102E|${WHITE}|e
+c44|JR東日本|E353系|ジェイアール イー さんびゃくごじゅうさんけい|とっきゅう あずさ・かいじ|#6B4C9A|${WHITE}|e
+c45|JR東日本|E5系|イー ごけい|しんかんせん はやぶさ|#E4007F|${WHITE}|s|#0A7E5C
+c46|JR東日本|E6系|イー ろっけい|しんかんせん こまち|#A7A9AC|${WHITE}|s|#B0172E
+c47|JR|E7系|イー ななけい|しんかんせん かがやき・はくたか|#B87333|${WHITE}|s|#2A63B0
+c48|JR東海|N700S|エヌ ななひゃく エス|しんかんせん のぞみ・ひかり・こだま|#1D50A2|${WHITE}|s
+c49|JR東海|923形|きゅうひゃくにじゅうさんがた ドクターイエロー|しんかんせんの けんさを する でんしゃ|#1D50A2|#F5D300|s
+c50|小田急|70000形 GSE|おだきゅう ななまんがた ジーエスイー|ロマンスカー||#E9542F|e
+c51|小田急|5000形|おだきゅう ごせんがた|おだきゅうせん|#2288CC|${STEEL}|c
+c52|京急|1000形|けいきゅう せんがた|けいきゅうせん|#FFFFFF|#E50012|c
+c53|京急|2100形|けいきゅう にせんひゃくがた|けいきゅうせん|#FFFFFF|#E50012|e
+c54|京王|5000系|けいおう ごせんけい|けいおうせん|#D7003A|${STEEL}|c
+c55|西武|001系 Laview|せいぶ ゼロゼロいちけい ラビュー|とっきゅう ちちぶ・むさし||#C9CDD2|e
+c56|東武|N100系|とうぶ エヌひゃくけい スペーシア エックス|とっきゅう スペーシア エックス|#2B3990|${WHITE}|e
+c57|京成|AE形|けいせい エーイーがた|スカイライナー|#1F3D8F|${WHITE}|e
+c58|東京モノレール|10000形|とうきょうモノレール いちまんがた|とうきょうモノレール|#0A4DA2|${WHITE}|m
+c59|横浜市営地下鉄|4000形|よこはましえいちかてつ よんせんがた|ブルーライン|#0071BC|${STEEL}|c
+c60|横浜高速鉄道|Y500系|よこはまこうそくてつどう ワイごひゃくけい|みなとみらいせん|#1B3F8B|${STEEL}|c
+c61|小田急|60000形 MSE|おだきゅう ろくまんがた エムエスイー|ロマンスカー||#1C5CA8|e
+c62|JR東海|N700A|エヌ ななひゃく エー|しんかんせん のぞみ・ひかり・こだま|#1D50A2|${WHITE}|s
+c63|京急|600形|けいきゅう ろっぴゃくがた|けいきゅうせん|#FFFFFF|#E50012|c
+c64|JR東日本|E233系|ジェイアール イー にひゃくさんじゅうさんけい|とうかいどうせん|#F68B1E|${STEEL}|c
+c65|横浜市営地下鉄|3000形|よこはましえいちかてつ さんぜんがた|ブルーライン|#0071BC|${STEEL}|c
+c66|JR東日本|E657系|ジェイアール イー ろっぴゃくごじゅうななけい|とっきゅう ときわ・ひたち|#C8102E|${WHITE}|e`.split('\n').map(l => {
+  const [id, co, name, yomi, run, band, body, shape, top] = l.split('|');
+  return { id, co, name, yomi, run, band, body, shape, top };
+});
+const CARDMAP = Object.fromEntries(CARDS.map(c => [c.id, c]));
+
+function trainSVG(c) {
+  const band = c.band || '', body = c.body, win = 'var(--window)', dark = '#3B4652';
+  const wheels = `<g fill="${dark}"><rect x="30" y="64" width="40" height="7" rx="3"/><rect x="132" y="64" width="40" height="7" rx="3"/>
+    <circle cx="40" cy="72" r="5"/><circle cx="60" cy="72" r="5"/><circle cx="142" cy="72" r="5"/><circle cx="162" cy="72" r="5"/></g>`;
+  if (c.shape === 's') {
+    return `<svg viewBox="0 0 200 80" aria-hidden="true">
+      <path d="M6 28 H112 C150 28 178 40 196 58 Q196 62 190 62 H6 Z" fill="${body}" stroke="${dark}" stroke-width="1.5"/>
+      ${c.top ? `<path d="M6 28 H112 C140 28 162 35 178 45 H6 Z" fill="${c.top}"/>` : ''}
+      <path d="M6 50 H186" stroke="${band}" stroke-width="4"/>
+      <path d="M128 31 C146 33 160 38 170 44 L150 44 C142 39 134 36 126 35 Z" fill="${win}"/>
+      ${[14, 34, 54, 74, 94].map(x => `<rect x="${x}" y="36" width="12" height="7" rx="2" fill="${win}"/>`).join('')}
+      ${wheels}</svg>`;
+  }
+  if (c.shape === 'e') {
+    return `<svg viewBox="0 0 200 80" aria-hidden="true">
+      <path d="M6 16 H150 C178 16 194 34 196 52 V62 H6 Z" fill="${body}" stroke="${dark}" stroke-width="1.5"/>
+      <path d="M156 20 C176 22 188 34 190 46 H164 Z" fill="${win}"/>
+      ${[12, 44, 76, 108].map(x => `<rect x="${x}" y="24" width="26" height="14" rx="3" fill="${win}"/>`).join('')}
+      ${band ? `<rect x="6" y="44" width="186" height="6" fill="${band}"/>` : ''}
+      ${wheels}</svg>`;
+  }
+  if (c.shape === 'm') {
+    return `<svg viewBox="0 0 200 80" aria-hidden="true">
+      <rect x="0" y="62" width="200" height="12" fill="${STEEL}"/>
+      <path d="M8 14 H168 Q194 16 196 40 V60 H8 Z" fill="${body}" stroke="${dark}" stroke-width="1.5"/>
+      <path d="M170 20 Q188 24 190 38 H172 Z" fill="${win}"/>
+      ${[16, 46, 76, 106, 136].map(x => `<rect x="${x}" y="22" width="22" height="14" rx="3" fill="${win}"/>`).join('')}
+      <rect x="8" y="44" width="188" height="6" fill="${band}"/></svg>`;
+  }
+  return `<svg viewBox="0 0 200 80" aria-hidden="true">
+    <path d="M10 12 H180 Q194 12 194 26 V60 H10 Z" fill="${body}" stroke="${dark}" stroke-width="1.5"/>
+    <rect x="176" y="18" width="14" height="20" rx="3" fill="${win}"/>
+    ${[18, 70, 122].map(x => `<rect x="${x}" y="20" width="34" height="14" rx="2" fill="${win}"/>`).join('')}
+    ${[54, 106, 158].map(x => `<rect x="${x}" y="18" width="14" height="40" rx="1.5" fill="none" stroke="${dark}" stroke-width="1.2"/><rect x="${x + 2}" y="21" width="10" height="11" fill="${win}"/>`).join('')}
+    ${band ? `<rect x="10" y="38" width="184" height="6" fill="${band}"/>` : ''}
+    <rect x="10" y="58" width="184" height="5" fill="${dark}"/>
+    ${wheels}</svg>`;
+}
+const cardColor = c => c.band && c.band !== '#FFFFFF' ? c.band : c.body;
+function cardHTML(c, opts = {}) {
+  if (!c) return '';
+  return `<div class="tcard${opts.big ? ' big' : ''}" style="--lc:${cardColor(c)}">
+    <span class="tcard-band"></span>${trainSVG(c)}
+    <span class="tcard-txt"><span class="tcard-co">${esc(c.co)}</span><span class="tcard-name">${esc(c.name)}</span>
+    <span class="tcard-run">${esc(c.run)}</span>${opts.big ? `<span class="tcard-yomi">${esc(c.yomi)}</span>` : ''}</span></div>`;
+}
+
+/* ================= きろく ================= */
+// v3：えきの すすみかたを かえたので、まえの きろくから はなまる・カード・せっていだけ ひきつぐ
+const KEY = 'mojidensha-v3';
+const load = () => {
+  try {
+    const v3 = JSON.parse(localStorage.getItem(KEY));
+    if (v3) return v3;
+    const v2 = JSON.parse(localStorage.getItem('mojidensha-v2'));
+    if (v2) { delete v2.prog; return v2; }
+  } catch (e) {}
+  return {};
+};
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+const st = Object.assign({ hm: 0, w: {}, cards: [], prog: {}, words: {}, wscript: 'h', strict: 'normal', free: 'h', freeMode: 'trace', vol: {}, melody: true }, load());
+['mg', 'nb', 'mt'].forEach(k => { if (typeof st.prog[k] !== 'number') st.prog[k] = 0; });
+st.words = Object.assign({ h: 0, k: 0 }, st.words);
+st.vol = Object.assign({ bgm: 1, sfx: 2 }, st.vol);
+
+/* ================= おと ================= */
+// 0=けす 1=ちいさい 2=ふつう 3=おおきい
+const VOLS = [0, 0.35, 0.7, 1];
+const BGM_BASE = 0.55;
+let actx = null, ducked = false;
+const bus = {};
+function audio() {
+  try {
+    if (!actx) {
+      const C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
+      actx = new C();
+      bus.bgm = actx.createGain(); bus.bgm.connect(actx.destination);
+      bus.sfx = actx.createGain(); bus.sfx.connect(actx.destination);
+      applyVol();
+    }
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  } catch (e) { return null; }
+}
+function applyVol() {
+  melodyEl.volume = VOLS[st.vol.sfx];
+  if (!actx) return;
+  bus.bgm.gain.setTargetAtTime(VOLS[st.vol.bgm] * BGM_BASE * (ducked ? 0.3 : 1), actx.currentTime, 0.12);
+  bus.sfx.gain.setTargetAtTime(VOLS[st.vol.sfx], actx.currentTime, 0.05);
+}
+const duck = on => { ducked = on; applyVol(); };
+function tone(f, at, dur, type = 'sine', vol = 0.18, dest) {
+  const a = audio(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + at;
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(dest || bus.sfx);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+let noise = null;
+function noiseBuf() {
+  if (noise) return noise;
+  const a = actx, b = a.createBuffer(1, a.sampleRate, a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return (noise = b);
+}
+function noiseHit(t, dur, vol, type, freq) {
+  const a = actx, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = noiseBuf(); s.loop = true;
+  f.type = type; f.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(bus.sfx);
+  s.start(t); s.stop(t + dur + 0.05);
+}
+const sfx = {
+  tap() { tone(1046.5, 0, 0.06, 'sine', 0.05); },
+  ok() { tone(880, 0, 0.18); tone(1318.5, 0.12, 0.35); },
+  soft() { tone(659.25, 0, 0.18, 'sine', 0.07); },
+  fanfare() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.13, 0.5, 'triangle', 0.16)); },
+  flip() {
+    const a = audio(); if (!a) return;
+    const o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
+    o.frequency.setValueAtTime(400, t); o.frequency.exponentialRampToValueAtTime(1600, t + 0.25);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    o.connect(g); g.connect(bus.sfx); o.start(t); o.stop(t + 0.35);
+  },
+  // ドアチャイム（ピンポーン）
+  door() { tone(1174.66, 0, 0.55, 'sine', 0.2); tone(932.33, 0.42, 1.0, 'sine', 0.2); },
+  // れんけつ（ガチャン）
+  couple() {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime + 0.05;
+    noiseHit(t, 0.12, 0.5, 'bandpass', 1800); noiseHit(t + 0.06, 0.25, 0.45, 'lowpass', 200); tone(523.25, 0.35, 0.3, 'triangle', 0.1);
+  },
+  // とうちゃくの チャイム
+  chime() { tone(1046.5, 0, 0.6, 'sine', 0.2); tone(830.6, 0.45, 0.9, 'sine', 0.2); },
+  // ガタンゴトン → ブレーキ（3びょう くらい）
+  train() {
+    const a = audio(); if (!a) return 0;
+    let t = a.currentTime + 0.05, gap = 0.42;
+    for (let k = 0; k < 5; k++) { noiseHit(t, 0.16, 0.45, 'lowpass', 220); noiseHit(t + 0.12, 0.16, 0.35, 'lowpass', 180); t += gap; gap *= 1.15; }
+    noiseHit(t, 1.0, 0.1, 'highpass', 3200);
+    return t - a.currentTime + 1.0;
+  },
+  // しゅっぱつ（だんだん はやく、とおくへ）
+  leave() {
+    const a = audio(); if (!a) return;
+    let t = a.currentTime + 0.05, gap = 0.6, v = 0.45;
+    for (let k = 0; k < 7; k++) { noiseHit(t, 0.16, v, 'lowpass', 220); noiseHit(t + 0.11, 0.16, v * 0.8, 'lowpass', 180); t += gap; gap *= 0.8; v *= 0.8; }
+  }
+};
+// ボタンを おしたときの ちいさな おと
+document.addEventListener('pointerdown', e => {
+  if (e.target.closest('.btn,.course,.tool,.stage-tag,.pair,.cell,.seg button,.card-btn,.chip')) sfx.tap();
+});
+
+/* ----- BGM（このアプリの ための オリジナル曲） ----- */
+const NOTE = n => {
+  const m = /^([A-G])(#?)(\d)$/.exec(n); if (!m) return 0;
+  const k = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] ? 1 : 0);
+  return 440 * Math.pow(2, (k + (+m[3] + 1) * 12 - 69) / 12);
+};
+function parseTrack(str) {
+  const toks = str.trim().split(/\s+/).filter(t => t !== '|'), ev = [];
+  toks.forEach((t, i) => {
+    if (t === '-') { const l = ev[ev.length - 1]; if (l && l.end === i) l.end = i + 1; }
+    else if (t !== '.') ev.push({ f: NOTE(t), at: i, end: i + 1 });
+  });
+  return { ev, len: toks.length };
+}
+// 1もじ＝8ぶおんぷ（bass は unit:2 で 4ぶおんぷ）
+const SONGS = {
+  map: { bpm: 108, tracks: [
+    { wave: 'triangle', vol: 0.16, unit: 1, notes: 'E5 G5 C6 G5 A5 G5 E5 . | F5 A5 D6 A5 G5 - E5 . | E5 G5 C6 E6 D6 C6 A5 . | G5 E5 F5 D5 C5 - - .' },
+    { wave: 'sine', vol: 0.2, unit: 2, notes: 'C3 G3 C3 G3 | F3 C4 G3 D3 | C3 G3 A3 E3 | G3 G2 C3 .' }] },
+  write: { bpm: 66, tracks: [
+    { wave: 'sine', vol: 0.12, unit: 1, notes: 'C5 . E5 . G5 . E5 . | A4 . C5 . E5 . C5 . | F4 . A4 . C5 . A4 . | G4 . B4 . D5 . B4 .' },
+    { wave: 'sine', vol: 0.14, unit: 2, notes: 'C3 - - - | A2 - - - | F2 - - - | G2 - - -' }] },
+  quiz: { bpm: 120, tracks: [
+    { wave: 'triangle', vol: 0.14, unit: 1, notes: 'G5 E5 G5 A5 G5 E5 C5 . | D5 E5 F5 D5 E5 - C5 . | G5 E5 G5 C6 B5 G5 A5 . | G5 F5 E5 D5 C5 - - .' },
+    { wave: 'sine', vol: 0.18, unit: 2, notes: 'C3 E3 G3 E3 | G2 B2 D3 B2 | C3 E3 F3 A3 | G2 B2 C3 .' }] },
+  depart: { bpm: 150, once: true, tracks: [
+    { wave: 'square', vol: 0.07, unit: 1, notes: 'E5 G5 C6 G5 A5 C6 E6 . | D6 C6 A5 C6 G5 - - . | E5 G5 C6 E6 G6 E6 C6 . | D6 B5 G5 B5 C6 - - -' },
+    { wave: 'triangle', vol: 0.12, unit: 2, notes: 'C4 G3 F3 G3 | A3 F3 G3 . | C4 G3 E3 C4 | G3 G3 C4 -' }] }
+};
+function playNote(dest, wave, f, t, dur, vol) {
+  const a = actx, o = a.createOscillator(), g = a.createGain();
+  o.type = wave; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(vol * 0.55, t + Math.min(dur, 0.3));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.1);
+  o.connect(g); g.connect(dest);
+  o.start(t); o.stop(t + dur + 0.15);
+}
+// きょくを ならす。once の きょくは ながさ（びょう）を かえす
+function songPlay(name, dest) {
+  const a = audio(); if (!a) return null;
+  const song = SONGS[name], e8 = 60 / song.bpm / 2;
+  const tracks = song.tracks.map(t => Object.assign({}, t, parseTrack(t.notes)));
+  const loopLen = Math.max(...tracks.map(t => t.len * t.unit)) * e8;
+  const g = a.createGain();
+  g.gain.setValueAtTime(song.once ? 1 : 0.0001, a.currentTime);
+  if (!song.once) g.gain.exponentialRampToValueAtTime(1, a.currentTime + 1.5);
+  g.connect(dest);
+  const h = { g, timer: null, loopLen, t0: a.currentTime + 0.12, n: 0 };
+  const schedule = () => {
+    while (h.t0 + h.n * loopLen < a.currentTime + 1.2) {
+      const base = h.t0 + h.n * loopLen;
+      tracks.forEach(t => t.ev.forEach(e => playNote(g, t.wave, e.f, base + e.at * t.unit * e8, (e.end - e.at) * t.unit * e8, t.vol)));
+      h.n++;
+      if (song.once) return;
+    }
+  };
+  schedule();
+  if (!song.once) h.timer = setInterval(schedule, 300);
+  return h;
+}
+function songStop(h, fade = 0.5) {
+  if (!h || !actx) return;
+  clearInterval(h.timer);
+  try {
+    const t = actx.currentTime;
+    h.g.gain.cancelScheduledValues(t);
+    h.g.gain.setValueAtTime(Math.max(h.g.gain.value, 0.0001), t);
+    h.g.gain.exponentialRampToValueAtTime(0.0001, t + fade);
+    setTimeout(() => { try { h.g.disconnect(); } catch (e) {} }, fade * 1000 + 200);
+  } catch (e) {}
+}
+const Bgm = { want: null, name: null, h: null };
+function bgm(name) {
+  Bgm.want = name;
+  if (Bgm.name === name && Bgm.h) return;
+  songStop(Bgm.h); Bgm.h = null; Bgm.name = null;
+  if (!name || !VOLS[st.vol.bgm] || !actx) return;
+  Bgm.h = songPlay(name, bus.bgm); Bgm.name = name;
+}
+const bgmStop = () => bgm(null);
+
+/* ----- 発車メロディ（おうちで よういした 音源。なければ オリジナル） ----- */
+// 音源は この iPad の なか（IndexedDB）だけに ほぞんする。ネットには あげない
+//   target：'st:駅名'（その駅を でるとき）、'line:mg'（その路線）、'common'（ぜんぶ）
+const MelDB = {
+  db: null,
+  open() {
+    return this.db || (this.db = new Promise((res, rej) => {
+      try {
+        const r = indexedDB.open('mojidensha-melody', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('m', { keyPath: 'id' });
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      } catch (e) { rej(e); }
+    }));
+  },
+  async run(mode, fn) {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('m', mode), q = fn(tx.objectStore('m'));
+      tx.oncomplete = () => res(q && q.result); tx.onerror = () => rej(tx.error);
+    });
+  },
+  all() { return this.run('readonly', s => s.getAll()); },
+  put(rec) { return this.run('readwrite', s => s.put(rec)); },
+  del(id) { return this.run('readwrite', s => s.delete(id)); }
+};
+let melodies = [];
+async function loadMelodies() {
+  try { melodies = ((await MelDB.all()) || []).map(r => Object.assign(r, { url: URL.createObjectURL(r.blob) })); }
+  catch (e) { melodies = []; }
+}
+const STATION_KANJI = [...new Set(Object.values(LINES).flatMap(l => l.stations.map(s => s[0])))];
+// ファイルめいから ながす ばしょを きめる（ながい 駅名を さきに さがす。西高島平 と 高島平 など）
+function guessTarget(filename) {
+  const st = STATION_KANJI.slice().sort((a, b) => b.length - a.length).find(k => filename.includes(k));
+  if (st) return 'st:' + st;
+  const line = Object.values(LINES).find(l => filename.includes(l.kanji));
+  return line ? 'line:' + line.id : 'common';
+}
+const melodyEl = new Audio();
+let jingle = null, melodyTimer = null;
+function melodySrc(line, from) {
+  const by = t => (melodies.find(m => m.target === t) || {}).url;
+  return by('st:' + from) || by('line:' + line.id) || by('common') || null;
+}
+function playMelody(line, from, onEnd) {
+  stopMelody();
+  if (!st.melody || !VOLS[st.vol.sfx] || !audio()) { melodyTimer = setTimeout(onEnd, 300); return; }
+  const src = melodySrc(line, from);
+  const fallback = () => {
+    jingle = songPlay('depart', bus.sfx);
+    const s = SONGS.depart, len = parseTrack(s.tracks[0].notes).len * 60 / s.bpm / 2;
+    melodyTimer = setTimeout(onEnd, (len + 0.4) * 1000);
+  };
+  if (!src) { fallback(); return; }
+  melodyEl.src = src; melodyEl.currentTime = 0; melodyEl.volume = VOLS[st.vol.sfx];
+  melodyEl.onended = () => onEnd();
+  const p = melodyEl.play();
+  if (p && p.catch) p.catch(() => fallback());
+}
+function stopMelody() {
+  clearTimeout(melodyTimer);
+  melodyEl.onended = null;
+  songStop(jingle, 0.3); jingle = null;
+  if (!melodyEl.paused) {
+    const v0 = melodyEl.volume; let k = 0;
+    const iv = setInterval(() => { k++; melodyEl.volume = Math.max(0, v0 * (1 - k / 6)); if (k >= 6) { clearInterval(iv); melodyEl.pause(); melodyEl.volume = v0; } }, 50);
+  }
+}
+
+/* ----- こえ ----- */
+// のちに 七海の 音声ファイルを 入れるときは AUDIO に「ことば → ファイル」を いれる
+const AUDIO = {};
+let jaVoice = null;
+const hasTTS = 'speechSynthesis' in window;
+function pickVoice() {
+  try {
+    const vs = speechSynthesis.getVoices().filter(v => /^ja/i.test(v.lang));
+    jaVoice = vs.find(v => /Kyoko.*(拡張|Enhanced|Premium)/i.test(v.name)) || vs.find(v => /Kyoko|O-ren|Otoya|Hattori/i.test(v.name)) || vs.find(v => v.localService) || vs[0] || null;
+  } catch (e) {}
+}
+if (hasTTS) { pickVoice(); try { speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) {} }
+const player = new Audio();
+player.onplay = () => duck(true);
+player.onended = player.onpause = () => duck(false);
+function speak(text, rate = 0.85) {
+  if (!text) return;
+  try { player.pause(); } catch (e) {}
+  if (AUDIO[text]) { player.src = AUDIO[text]; player.play().catch(() => {}); return; }
+  if (!hasTTS) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP'; u.rate = rate;
+    if (jaVoice) u.voice = jaVoice;
+    u.onstart = () => duck(true);
+    u.onend = u.onerror = () => duck(false);
+    if (speechSynthesis.speaking || speechSynthesis.pending) { speechSynthesis.cancel(); setTimeout(() => speechSynthesis.speak(u), 60); }
+    else speechSynthesis.speak(u);
+  } catch (e) {}
+}
+const hush = () => { try { player.pause(); } catch (e) {} if (hasTTS) try { speechSynthesis.cancel(); } catch (e) {} duck(false); };
+// iPad は さいしょの タッチで おとを ゆるす
+document.addEventListener('pointerdown', () => {
+  audio();
+  if (hasTTS) { try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
+  if (Bgm.want && !Bgm.h) bgm(Bgm.want);
+}, { once: true });
+const SPK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9h4l5-4v14l-5-4h-4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>';
+
+/* ================= はなまる ================= */
+function hanamaruSVG() {
+  const cx = 100, cy = 100;
+  let sp = '';
+  const turns = 3.1, steps = 240;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps, a = -Math.PI / 2 + t * turns * 2 * Math.PI;
+    const r = (6 + t * 54) * (1 + 0.03 * Math.sin(5 * a));
+    sp += (i ? 'L' : 'M') + (cx + r * Math.cos(a) * 1.06).toFixed(1) + ' ' + (cy + r * Math.sin(a)).toFixed(1);
+  }
+  let pt = '';
+  const n = 11, R = 70;
+  for (let i = 0; i <= n; i++) {
+    const a = -Math.PI / 2 + (i / n) * 2 * Math.PI;
+    const x = cx + R * Math.cos(a) * 1.06, y = cy + R * Math.sin(a);
+    if (!i) pt += `M${x.toFixed(1)} ${y.toFixed(1)}`;
+    else {
+      const am = a - Math.PI / n;
+      pt += `Q${(cx + (R + 30) * Math.cos(am) * 1.06).toFixed(1)} ${(cy + (R + 30) * Math.sin(am)).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+  }
+  return `<svg class="hm" viewBox="-6 -6 212 212" aria-hidden="true"><path class="hm-pt" d="${pt}"/><path class="hm-sp" d="${sp}"/><circle class="hm-c" cx="100" cy="100" r="70"/></svg>`;
+}
+$('#hmMini').innerHTML = hanamaruSVG();
+$('#praiseArt').innerHTML = hanamaruSVG();
+const updateStats = () => { $('#hmCount').textContent = st.hm; $('#cardCount').textContent = st.cards.length; };
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let praiseTimer = null, praiseDone = null;
+function praise(kind, text, then) {
+  const el = $('#praise');
+  el.classList.toggle('maru', kind === 'maru');
+  $('#praiseText').textContent = text;
+  el.hidden = false;
+  const reduce = reduceMotion();
+  (kind === 'maru' ? ['.hm-c'] : ['.hm-sp', '.hm-pt']).forEach((sel, i) => {
+    const p = el.querySelector(sel), len = p.getTotalLength();
+    p.style.transition = 'none';
+    p.style.strokeDasharray = len;
+    p.style.strokeDashoffset = reduce ? 0 : len;
+    p.getBoundingClientRect();
+    if (!reduce) { p.style.transition = `stroke-dashoffset ${i ? 0.7 : 0.9}s ease-out ${i ? 0.8 : 0}s`; p.style.strokeDashoffset = 0; }
+  });
+  kind === 'maru' ? sfx.ok() : sfx.fanfare();
+  setTimeout(() => speak(text.replace(/[！!]/g, '。')), 350);
+  praiseDone = then || null;
+  clearTimeout(praiseTimer);
+  praiseTimer = setTimeout(closePraise, 2600);
+}
+function closePraise() {
+  clearTimeout(praiseTimer);
+  if ($('#praise').hidden) return;
+  $('#praise').hidden = true;
+  const f = praiseDone; praiseDone = null;
+  if (f) f();
+}
+$('#praise').addEventListener('click', closePraise);
+// はなまるを ふやす。15こ ごとに ボーナスカード（えきで もらう ぶんが なくならない ときだけ）
+function addHanamaru(then) {
+  st.hm++; save(); updateStats();
+  if (st.hm % 15 === 0) {
+    const left = CARDS.length - st.cards.length;
+    const stopsLeft = Object.values(LINES).reduce((n, l) => n + l.stages.length - st.prog[l.id], 0)
+      + ['h', 'k'].reduce((n, s) => n + trainsOf(s).filter(t => st.words[s] < t.start + t.len).length, 0);
+    const c = left > stopsLeft ? pickCard(null) : null;
+    if (c) return () => showCardReward(c, `はなまる ${st.hm}こ ボーナス！`, then);
+  }
+  return then;
+}
+
+/* ================= シート・オーバーレイ ================= */
+function sheet(html, wide) {
+  const body = $('#sheetBody');
+  body.className = 'sheet' + (wide ? ' wide' : '');
+  body.innerHTML = '<button class="x" type="button" data-close aria-label="とじる">×</button>' + html;
+  $('#sheet').hidden = false;
+  body.scrollTop = 0;
+  return body;
+}
+const closeSheet = () => { $('#sheet').hidden = true; };
+$('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet' || e.target.closest('[data-close]')) closeSheet(); });
+function overlay(html) { const b = $('#overlayBody'); b.innerHTML = html; $('#overlay').hidden = false; $('#overlay').scrollTop = 0; return b; }
+const closeOverlay = () => { $('#overlay').hidden = true; };
+
+/* ================= 駅名標 ================= */
+function boardHTML(line, idx, nameOverride) {
+  const s = line.stations, here = s[idx], prev = s[idx - 1], next = s[idx + 1];
+  const name = nameOverride || here[1];
+  return `<div class="board" style="--lc:${line.color}">
+    <div class="board-top"><span class="sym">${line.sym}</span><span class="board-line">${line.kanji}</span></div>
+    <div class="board-name"${[...name].length > 7 ? ' style="font-size:clamp(1.7rem,4.6vw,2.5rem)"' : ''}>${name}</div>
+    <div class="board-kanji">${here[0]}</div>
+    <div class="board-band"><span>${prev ? '← ' + prev[1] : ''}</span><span>${next ? next[1] + ' →' : ''}</span></div></div>`;
+}
+const frontTrain = color => `<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="8" y="6" width="44" height="46" rx="10" fill="${color}" stroke="var(--ink)" stroke-width="3"/>
+  <rect x="14" y="13" width="32" height="16" rx="4" fill="var(--window)"/><circle cx="18" cy="40" r="3.5" fill="var(--yellow)"/><circle cx="42" cy="40" r="3.5" fill="var(--yellow)"/>
+  <rect x="18" y="52" width="6" height="5" fill="var(--ink)"/><rect x="36" y="52" width="6" height="5" fill="var(--ink)"/></svg>`;
+
+/* ================= がめん きりかえ ================= */
+let view = 'home', cur = { line: null, idx: 0 };
+let activeWriter = null;
+const dropWriter = () => { if (activeWriter) { activeWriter.destroy(); activeWriter = null; } };
+function go(v, title, music) {
+  view = v;
+  if (v !== 'stage' && v !== 'free') dropWriter();
+  document.querySelectorAll('main > .view').forEach(el => { el.hidden = el.id !== 'v-' + v; });
+  $('#back').hidden = v === 'home';
+  $('#back').textContent = v === 'stage' ? '‹ やめる' : '‹ もどる';
+  $('#title').textContent = title || 'もじでんしゃ';
+  $('#main').scrollTop = 0;
+  hush();
+  bgm(music === undefined ? 'map' : music);
+}
+$('#back').addEventListener('click', () => {
+  closeOverlay(); stopMelody();
+  if (view === 'stage' && cur.mode === 'words') openWords(cur.ws);
+  else if (view === 'stage' && cur.line) openLine(cur.line.id);
+  else if (view === 'free' && freeState.writing) openFree();
+  else openHome();
+});
+
+/* ================= ホーム ================= */
+function openHome() {
+  go('home');
+  const v = $('#v-home');
+  const course = l => {
+    const p = st.prog[l.id], n = l.stages.length, done = p >= n;
+    const here = l.stations[Math.min(p, n)];
+    return `<button class="course" type="button" data-line="${l.id}" style="--lc:${l.color}">
+      <span class="course-head"><span class="sym" style="--lc:${l.color}">${l.sym}</span><span><b>${l.kana}</b><small>${l.kanji}</small></span></span>
+      <span class="course-goal">${l.goal}</span>
+      <span class="course-now">${done ? 'ゴール！ ' : 'いま '}<b>${here[1]}</b>　${p} / ${n}</span>
+      <span class="rail"><i style="width:${Math.round(p / n * 100)}%"></i></span></button>`;
+  };
+  v.innerHTML = `<p class="hello">きょうは どの でんしゃに のる？</p>
+    <div class="courses">${Object.values(LINES).map(course).join('')}</div>
+    <div class="tools">
+      <button class="tool" type="button" id="toWords"><span class="ic">${carSVG('var(--mg)', true, true).replace('<svg', '<svg width="64"')}</span><span><b>でんしゃことば</b><small>ことばを かいて でんしゃを つなごう　ひらがな ${st.words.h} / ${TWORDS.h.length}・カタカナ ${st.words.k} / ${TWORDS.k.length}</small></span></button>
+      <button class="tool" type="button" id="toZukan"><span class="ic">${trainSVG(CARDMAP.c01).replace('<svg', '<svg width="64"')}</span><span><b>カードずかん</b><small>あつめた カード ${st.cards.length} / ${CARDS.length}</small></span></button>
+      <button class="tool" type="button" id="toFree"><span class="ic">あ</span><span><b>じゆうれんしゅう</b><small>すきな もじを よんだり かいたり</small></span></button>
+    </div>
+    <div class="foot"><button class="linkbtn" type="button" id="toParent">おうちの かたへ</button></div>`;
+  v.querySelectorAll('[data-line]').forEach(b => b.addEventListener('click', () => openLine(b.dataset.line)));
+  $('#toWords').addEventListener('click', () => openWords(st.wscript));
+  $('#toZukan').addEventListener('click', openZukan);
+  $('#toFree').addEventListener('click', openFree);
+  $('#toParent').addEventListener('click', openParent);
+}
+function openParent() {
+  const volSeg = key => `<div class="seg" data-vol="${key}">${['けす', 'ちいさい', 'ふつう', 'おおきい'].map((l, i) => `<button type="button" data-v="${i}">${l}</button>`).join('')}</div>`;
+  const body = sheet(`<h2>おうちの かたへ</h2>
+    <p>3つのコースは、目黒線＝ひらがなを書く、南北線＝カタカナを読む、三田線＝カタカナを書く、です。次の駅名に初めて出てくる字を練習してから、着いた駅で駅名を書き（南北線は読み）、車両カードを1枚もらいます。</p>
+    <p>駅名に出てこない字は「でんしゃことば」で練習します。言葉を1つ書くごとに車両が1両つながり、編成ができると出発してカードがもらえます。「ヂ」「ヅ」は言葉に入れていないので、じゆうれんしゅうで練習してください。</p>
+    <p>うまく書けないときは、お手本を見せながら一緒にやり直し、3回目は必ず合格になります。×や点数は出しません。</p>
+    <div class="set-row"><b>BGM</b>${volSeg('bgm')}</div>
+    <div class="set-row"><b>こうかおん・発車メロディ</b>${volSeg('sfx')}</div>
+    <div class="set-row"><b>発車メロディ</b><div class="seg" id="melSeg"><button type="button" data-v="1">ながす</button><button type="button" data-v="0">ながさない</button></div></div>
+    <div class="set-row"><b>書いた字の判定</b><div class="seg" id="strictSeg"><button type="button" data-v="easy">やさしい</button><button type="button" data-v="normal">ふつう</button><button type="button" data-v="hard">きびしい</button></div></div>
+    <p><b>発車メロディの音源</b>：iPad の「ファイル」にある音源を読み込むと、選んだ駅を出発するときに流れます。音源はこの iPad の中だけに保存され、ネットには送られません。読み込んでいないときは、このアプリ用のオリジナルのメロディが流れます。ファイル名に駅名（白金高輪 など）が入っていると、その駅に自動で割り当てます。</p>
+    <div class="row" style="margin-bottom:10px"><label class="btn sm" for="melFile">音源を読み込む</label>
+      <input type="file" id="melFile" accept="audio/*" multiple style="position:absolute;width:1px;height:1px;opacity:0"></div>
+    <div id="melList" class="mel-list"></div>
+    <p>記録（はなまる・カード・進んだ駅）は、この iPad のブラウザの中にだけ保存されます。</p>
+    <div class="row" style="margin-bottom:14px"><button class="btn sm" type="button" id="resetBtn">きろくを ぜんぶ けす</button></div>
+    <p style="font-size:.85rem;color:var(--ink-soft)">書き順のデータ：KanjiVG（© Ulrich Apel, CC BY-SA 3.0, kanjivg.tagaini.net）。BGM と効果音はこのアプリ用に作ったものです。車両カードの絵は簡略化したイメージです。</p>`);
+  const paint = () => {
+    body.querySelectorAll('[data-vol]').forEach(s => s.querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.v === st.vol[s.dataset.vol])));
+    body.querySelectorAll('#melSeg button').forEach(b => b.classList.toggle('on', (b.dataset.v === '1') === !!st.melody));
+    body.querySelectorAll('#strictSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === st.strict));
+  };
+  paint();
+  body.querySelectorAll('[data-vol]').forEach(s => s.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    st.vol[s.dataset.vol] = +b.dataset.v; save(); paint(); audio(); applyVol();
+    if (s.dataset.vol === 'bgm') { const w = Bgm.want; bgm(null); bgm(w); }
+    else sfx.ok();
+  }));
+  body.querySelector('#melSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; st.melody = b.dataset.v === '1'; save(); paint(); });
+  // 発車メロディ：よみこんだ 音源の いちらん（ながす ばしょを えらべる）
+  const targetOptions = sel => [['common', 'すべての駅（共通）'], ...Object.values(LINES).map(l => ['line:' + l.id, `${l.kanji}の駅（共通）`]), ...STATION_KANJI.map(k => ['st:' + k, k])]
+    .map(([v, l]) => `<option value="${esc(v)}"${v === sel ? ' selected' : ''}>${esc(l)}</option>`).join('');
+  const paintMel = () => {
+    const box = body.querySelector('#melList');
+    box.innerHTML = melodies.length ? melodies.map(m => `<div class="mel-row" data-id="${esc(m.id)}">
+        <span class="mel-name">${esc(m.name)}</span>
+        <select aria-label="ながす駅">${targetOptions(m.target)}</select>
+        <button class="btn sm" type="button" data-act="play">${PLAY}</button>
+        <button class="btn sm" type="button" data-act="del">けす</button></div>`).join('')
+      : '<p style="margin:0;color:var(--ink-soft)">まだ読み込んでいません</p>';
+  };
+  paintMel();
+  body.querySelector('#melFile').addEventListener('change', async e => {
+    for (const f of e.target.files) {
+      const rec = { id: Date.now() + '-' + Math.random().toString(36).slice(2, 8), name: f.name, target: guessTarget(f.name), blob: f };
+      try { await MelDB.put(rec); melodies.push(Object.assign(rec, { url: URL.createObjectURL(f) })); } catch (err) {}
+    }
+    e.target.value = '';
+    paintMel();
+  });
+  body.querySelector('#melList').addEventListener('change', async e => {
+    const row = e.target.closest('.mel-row'), m = row && melodies.find(x => x.id === row.dataset.id);
+    if (!m) return;
+    m.target = e.target.value;
+    try { await MelDB.put({ id: m.id, name: m.name, target: m.target, blob: m.blob }); } catch (err) {}
+  });
+  body.querySelector('#melList').addEventListener('click', async e => {
+    const b = e.target.closest('button'), row = b && b.closest('.mel-row'), m = row && melodies.find(x => x.id === row.dataset.id);
+    if (!m) return;
+    if (b.dataset.act === 'play') {
+      if (!melodyEl.paused && melodyEl.src === m.url) { stopMelody(); return; }
+      stopMelody(); melodyEl.src = m.url; melodyEl.currentTime = 0; melodyEl.play().catch(() => {});
+    } else {
+      stopMelody();
+      try { await MelDB.del(m.id); } catch (err) {}
+      URL.revokeObjectURL(m.url);
+      melodies = melodies.filter(x => x !== m);
+      paintMel();
+    }
+  });
+  body.querySelector('#strictSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; st.strict = b.dataset.v; save(); paint(); });
+  body.querySelector('#resetBtn').addEventListener('click', () => {
+    const b2 = sheet(`<h2>きろくを ぜんぶ けしますか？</h2><p style="text-align:center">はなまる・カード・すすんだ えきが すべて きえます。</p>
+      <div class="row"><button class="btn" type="button" data-close>やめる</button><button class="btn red" type="button" id="doReset">けす</button></div>`);
+    b2.querySelector('#doReset').addEventListener('click', () => {
+      st.hm = 0; st.w = {}; st.cards = []; st.prog = { mg: 0, nb: 0, mt: 0 }; st.words = { h: 0, k: 0 }; save(); updateStats(); closeSheet(); openHome();
+    });
+  });
+}
+
+/* ================= 路線図 ================= */
+function openLine(id) {
+  const line = LINES[id];
+  cur.line = line;
+  go('line', `${line.kana}（${line.kanji}）`);
+  const v = $('#v-line'), p = st.prog[id], n = line.stages.length, done = p >= n;
+  const top = done
+    ? `<p class="next-label">ゴール！ ぜんぶ クリアしたよ</p>${boardHTML(line, n)}<p style="margin:0;color:var(--ink-soft);font-weight:700">すきな えきを えらんで もういちど あそべるよ</p>`
+    : `<p class="next-label">つぎは</p>${boardHTML(line, p + 1)}<button class="btn big go" type="button" id="goBtn" style="--lc:${line.color}">しゅっぱつ！</button>`;
+  const stops = line.stations.map((s, i) => {
+    const cls = i <= p ? '' : ' todo';
+    let tag = '';
+    if (i > 0) {
+      const sg = line.stages[i - 1], lab = stageLabel(sg), ui = !/^(wr|rr)$/.test(stageType(sg));
+      const state = i <= p ? 'done' : i === p + 1 ? 'now' : '';
+      tag = `<button class="stage-tag ${state}${ui ? ' ui' : ''}" type="button" data-i="${i - 1}" ${state ? '' : 'disabled'}>${esc(lab)}</button>`;
+    }
+    const mark = i === Math.min(p, n) ? `<span class="train">${frontTrain(line.color)}</span>` : '<span class="dot"></span>';
+    return `<li class="stop${cls}" style="--lc:${line.color}">${mark}<span class="stop-name"><b>${s[1]}</b><small>${s[0]}</small></span>${tag}</li>`;
+  }).join('');
+  v.innerHTML = `<div class="line-top">${top}</div><ol class="route">${stops}</ol>`;
+  const goBtn = v.querySelector('#goBtn');
+  if (goBtn) goBtn.addEventListener('click', () => departure(line, p));
+  v.querySelectorAll('.stage-tag:not(:disabled)').forEach(b => b.addEventListener('click', () => departure(line, +b.dataset.i)));
+  if (!done) setTimeout(() => { if (view === 'line') speak(`つぎは、${line.stations[p + 1][1]}`); }, 300);
+}
+// これから やることを みせる（みとおし）
+function scheduleSteps(line, idx) {
+  const sg = line.stages[idx], t = stageType(sg), steps = [];
+  if (t === 'wr') steps.push(`もじ ${[...sg[1]].length}こ`);
+  else if (t === 'rr') steps.push('おぼえる', 'クイズ');
+  else if (t === 'rv') steps.push('クイズ');
+  if (line.id === 'nb') steps.push('えきの なまえを よむ');
+  else if (stationBlanks(line, idx).length) steps.push('えきの なまえを かく');
+  if (idx === st.prog[line.id]) steps.push('カード');
+  return `<div class="sched">${steps.map(s => `<span>${s}</span>`).join('<i>→</i>')}</div>`;
+}
+function departure(line, idx) {
+  const sg = line.stages[idx], goal = stageGoal(sg), next = line.stations[idx + 1], from = line.stations[idx];
+  bgmStop(); hush();
+  const b = overlay(`<p>つぎは</p>${boardHTML(line, idx + 1)}<p>${esc(goal)}</p>${scheduleSteps(line, idx)}
+    <button class="btn big go" type="button" id="startBtn" style="--lc:${line.color}">はじめる</button>`);
+  let started = false;
+  playMelody(line, from[0], () => {
+    if (started) return;
+    sfx.door();
+    setTimeout(() => { if (!started) speak(`ドアが しまります。つぎは、${next[1]}`); }, 1500);
+  });
+  b.querySelector('#startBtn').addEventListener('click', () => { started = true; stopMelody(); hush(); closeOverlay(); startStage(line, idx); });
+}
+
+/* ================= 到着とカード ================= */
+function pickCard(line) {
+  const owned = new Set(st.cards);
+  const first = line ? line.first.find(id => !owned.has(id)) : null;
+  if (first) return CARDMAP[first];
+  const rest = CARDS.filter(c => !owned.has(c.id));
+  return rest.length ? rest[Math.floor(Math.random() * rest.length)] : null;
+}
+// ステージの あと：えきの なまえ → とうちゃく
+function stationTask(line, idx) {
+  if (line.id === 'nb') return stationRead(line, idx);
+  const blanks = stationBlanks(line, idx);
+  if (!blanks.length) return arrive(line, idx);
+  const name = stationName(line, idx + 1), chars = [...name];
+  const items = blanks.map(i => ({ c: chars[i] }));
+  writeSession({
+    items,
+    top: i => `<div class="st-band" style="--lc:${line.color}"><span class="sym" style="--lc:${line.color}">${line.sym}</span><b style="font:900 1.15rem var(--font-ui)">えきの なまえを かいて とうちゃく！</b></div>
+      ${wordPills(name, blanks, i)}`,
+    goalText: i => `あと <b>${items.length - i}</b>もじで <b>${line.stations[idx + 1][1]}</b> に とうちゃく`,
+    say: i => i === 0 ? `${line.stations[idx + 1][1]}。${items[0].c}` : items[i].c,
+    onDone: () => arrive(line, idx)
+  });
+}
+// 南北線：カタカナの えきめいを よむ
+function stationRead(line, idx) {
+  const v = $('#v-stage'), target = line.stations[idx + 1];
+  v.classList.remove('fill');
+  dropWriter(); bgm('quiz');
+  const others = shuffle(line.stations.filter(s => s !== target)).slice(0, 2);
+  const opts = shuffle([target, ...others]);
+  v.innerHTML = `<div class="intro"><p class="ask">えきの なまえ、なんて よむ？</p>${boardHTML(line, idx + 1, toK(target[1]))}
+    <div class="choices list" id="stChoices"></div></div>`;
+  let miss = false, lock = false;
+  const box = v.querySelector('#stChoices');
+  opts.forEach(o => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'choice'; b.textContent = o[1];
+    b.addEventListener('click', () => {
+      if (lock || b.disabled) return;
+      if (o === target) {
+        lock = true; b.classList.remove('hint'); b.classList.add('right'); sfx.ok(); speak(target[1]);
+        setTimeout(() => { if (view === 'stage') arrive(line, idx); }, 1500);
+      } else {
+        b.classList.add('dim'); b.disabled = true; sfx.soft();
+        if (!miss) { miss = true; [...box.children][opts.indexOf(target)].classList.add('hint'); }
+        speak(target[1]);
+      }
+    });
+    box.append(b);
+  });
+  setTimeout(() => speak('えきの なまえ、なんて よむかな'), 300);
+}
+function arrive(line, idx) {
+  dropWriter(); bgmStop(); hush();
+  const fresh = idx === st.prog[line.id];
+  if (fresh) { st.prog[line.id] = idx + 1; save(); }
+  const name = line.stations[idx + 1][1], last = idx + 1 === line.stages.length;
+  const card = fresh ? pickCard(line) : null;
+  const b = overlay(`<svg class="train-run${reduceMotion() ? '' : ' in'}" viewBox="0 0 200 80" aria-hidden="true">${trainSVG({ shape: 'c', body: STEEL, band: line.hex }).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</svg>
+    ${boardHTML(line, idx + 1)}
+    <p>${last ? `しゅうてん ${name}に つきました！<br>コース クリア！` : `${name}に つきました！`}</p>
+    <button class="btn big go" type="button" id="arrBtn" style="--lc:${line.color}">${card ? 'カードを もらう' : 'つぎへ'}</button>`);
+  const runFor = sfx.train() || 0;
+  setTimeout(() => sfx.chime(), runFor * 1000);
+  setTimeout(() => speak(last ? `しゅうてん、${name}です。コースクリア。おめでとう` : `${name}、${name}です`), runFor * 1000 + 900);
+  b.querySelector('#arrBtn').addEventListener('click', () => {
+    hush();
+    if (card) showCardReward(card, last ? 'コース クリアの カード！' : 'カードを ゲット！', () => openLine(line.id));
+    else { closeOverlay(); openLine(line.id); }
+  });
+}
+function showCardReward(c, title, then) {
+  if (!st.cards.includes(c.id)) { st.cards.push(c.id); save(); updateStats(); }
+  const b = overlay(`<p>${esc(title)}</p>
+    <div class="flip" id="flip" style="--lc:${cardColor(c)}"><div class="flip-in">
+      <div class="flip-back" role="button" tabindex="0" aria-label="カードを めくる">？</div>
+      <div class="flip-front">${cardHTML(c, { big: true })}</div></div></div>
+    <button class="btn big" type="button" id="cardOk">やったね！</button>`);
+  const flip = b.querySelector('#flip');
+  const open = () => { if (flip.classList.contains('open')) return; flip.classList.add('open'); sfx.flip(); setTimeout(() => sfx.fanfare(), 350); setTimeout(() => speak(c.yomi), 1100); };
+  flip.addEventListener('click', open);
+  setTimeout(open, 900);
+  b.querySelector('#cardOk').addEventListener('click', () => { closeOverlay(); if (then) then(); });
+}
+
+/* ================= カードずかん ================= */
+function openZukan() {
+  go('zukan', `カードずかん　${st.cards.length} / ${CARDS.length}`);
+  const v = $('#v-zukan'), owned = new Set(st.cards);
+  v.innerHTML = `<div class="zukan">${CARDS.map((c, i) => owned.has(c.id)
+    ? `<button type="button" class="card-btn" data-id="${c.id}">${cardHTML(c)}</button>`
+    : `<div class="tcard locked"><span class="tcard-band"></span>${trainSVG(c)}<span class="tcard-txt"><span class="tcard-co">No.${i + 1}</span><span class="tcard-name">？</span><span class="tcard-run">まだ もっていない</span></span></div>`).join('')}</div>`;
+  v.querySelectorAll('.card-btn').forEach(b => b.addEventListener('click', () => {
+    const c = CARDMAP[b.dataset.id];
+    sheet(cardHTML(c, { big: true }));
+    speak(c.yomi);
+  }));
+}
+
+/* ================= 書く（マス目） ================= */
+// m=はみだしてよい はば、cov=ぜんたいで なぞれた わりあい、each=1かくごとに なぞれた わりあい、out=はみだした わりあい
+const STRICT = { easy: { m: 8, cov: 0.4, each: 0.25, out: 0.32 }, normal: { m: 6, cov: 0.5, each: 0.35, out: 0.24 }, hard: { m: 4.5, cov: 0.62, each: 0.5, out: 0.16 } };
+const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function makeWriter(host) {
+  host.innerHTML = '<div class="masu"><svg viewBox="0 0 109 109" aria-hidden="true"></svg><canvas></canvas></div>';
+  const masu = host.querySelector('.masu'), svg = host.querySelector('svg'), cv = host.querySelector('canvas');
+  const wr = { ch: null, mode: 'trace', strokes: [], S: 300 };
+  let curS = null, activePtr = null, penSeen = false, timer = null;
+  const ctx = () => { const c = cv.getContext('2d'); c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = cssv('--ink'); c.lineWidth = wr.S * 0.055; return c; };
+  function drawStroke(c, s, S) {
+    if (!s.length) return;
+    c.beginPath(); c.moveTo(s[0][0] * S, s[0][1] * S);
+    if (s.length === 1) c.lineTo(s[0][0] * S + 0.1, s[0][1] * S);
+    for (let i = 1; i < s.length; i++) c.lineTo(s[i][0] * S, s[i][1] * S);
+    c.stroke();
+  }
+  function redraw() { const c = ctx(); c.clearRect(0, 0, wr.S, wr.S); wr.strokes.forEach(s => drawStroke(c, s, wr.S)); }
+  function size() {
+    const S = Math.floor(Math.min(host.clientWidth - 12, host.clientHeight - 16, 640));
+    if (S < 120) return;
+    wr.S = S;
+    masu.style.width = masu.style.height = S + 'px';
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = cv.height = Math.round(S * dpr);
+    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    redraw();
+  }
+  const ro = new ResizeObserver(size); ro.observe(host);
+  function guide() {
+    const d = STROKES[wr.ch];
+    let h = '<line class="cr" x1="54.5" y1="1" x2="54.5" y2="108"/><line class="cr" x1="1" y1="54.5" x2="108" y2="54.5"/>';
+    if (d) {
+      if (wr.mode === 'trace') {
+        h += d.s.map(p => `<path class="gd" d="${p}"/>`).join('');
+        h += d.n.map((p, i) => `<text class="num" x="${p[0]}" y="${p[1]}">${i + 1}</text>`).join('');
+      }
+      h += d.s.map(p => `<path class="an" d="${p}"/>`).join('');
+    }
+    svg.innerHTML = h;
+  }
+  function play() {
+    const ps = [...svg.querySelectorAll('.an')];
+    let t = 0;
+    ps.forEach(p => {
+      if (p.getAnimations) p.getAnimations().forEach(a => a.cancel());
+      const len = p.getTotalLength();
+      p.style.strokeDasharray = len;
+      if (reduceMotion() || !p.animate) { p.style.strokeDashoffset = 0; p.style.opacity = 1; return; }
+      const dur = Math.max(420, len * 15);
+      p.animate([{ strokeDashoffset: len, opacity: 1 }, { strokeDashoffset: 0, opacity: 1 }], { duration: dur, delay: t, fill: 'forwards', easing: 'ease-in-out' });
+      t += dur + 200;
+    });
+    clearTimeout(timer);
+    timer = setTimeout(() => ps.forEach(p => {
+      if (p.getAnimations) p.getAnimations().forEach(a => a.cancel());
+      if (p.animate && !reduceMotion()) p.animate([{ opacity: 1, strokeDashoffset: 0 }, { opacity: 0, strokeDashoffset: 0 }], { duration: 500, fill: 'forwards' });
+      else p.style.opacity = 0;
+    }), t + 900);
+  }
+  const pt = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+  // ぜんがめんで したに なぞると Safari が「スワイプで とじる」と うけとるので、マスの うえの タッチは ここで とめる
+  ['touchstart', 'touchmove'].forEach(t => cv.addEventListener(t, e => e.preventDefault(), { passive: false }));
+  cv.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'pen') penSeen = true;
+    if (penSeen && e.pointerType === 'touch') return; // Apple Pencil を つかうときは てのひらを むしする
+    if (activePtr !== null) return;
+    e.preventDefault();
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+    activePtr = e.pointerId;
+    curS = [pt(e)]; wr.strokes.push(curS);
+    drawStroke(ctx(), curS, wr.S);
+    if (wr.onInk) wr.onInk();
+  });
+  cv.addEventListener('pointermove', e => {
+    if (e.pointerId !== activePtr || !curS) return;
+    e.preventDefault();
+    let evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    if (!evs.length) evs = [e];
+    const c = ctx();
+    for (const ev of evs) {
+      const p = pt(ev), last = curS[curS.length - 1];
+      curS.push(p);
+      c.beginPath(); c.moveTo(last[0] * wr.S, last[1] * wr.S); c.lineTo(p[0] * wr.S, p[1] * wr.S); c.stroke();
+    }
+  });
+  const end = e => {
+    if (e.pointerId !== activePtr) return;
+    activePtr = null;
+    // うっかり さわった だけの ちいさな てんは けす
+    if (curS) {
+      let len = 0;
+      for (let i = 1; i < curS.length; i++) len += Math.hypot(curS[i][0] - curS[i - 1][0], curS[i][1] - curS[i - 1][1]);
+      if (len < 0.012) { wr.strokes.pop(); redraw(); }
+    }
+    curS = null;
+  };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+
+  function fit(A, N, half) {
+    let gx0 = N, gy0 = N, gx1 = 0, gy1 = 0;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (A[(y * N + x) * 4 + 3] > 100) {
+      if (x < gx0) gx0 = x; if (x > gx1) gx1 = x; if (y < gy0) gy0 = y; if (y > gy1) gy1 = y;
+    }
+    gx0 = (gx0 + half) / N; gx1 = (gx1 - half) / N; gy0 = (gy0 + half) / N; gy1 = (gy1 - half) / N;
+    let ix0 = 1, iy0 = 1, ix1 = 0, iy1 = 0;
+    wr.strokes.forEach(s => s.forEach(([x, y]) => { ix0 = Math.min(ix0, x); ix1 = Math.max(ix1, x); iy0 = Math.min(iy0, y); iy1 = Math.max(iy1, y); }));
+    const iw = ix1 - ix0, ih = iy1 - iy0, gw = gx1 - gx0, gh = gy1 - gy0;
+    let sx = iw > 0.02 ? gw / iw : 0, sy = ih > 0.02 ? gh / ih : 0;
+    if (!sx) sx = sy || 1; if (!sy) sy = sx;
+    const icx = (ix0 + ix1) / 2, icy = (iy0 + iy1) / 2, gcx = (gx0 + gx1) / 2, gcy = (gy0 + gy1) / 2;
+    return wr.strokes.map(s => s.map(([x, y]) => [(x - icx) * sx + gcx, (y - icy) * sy + gcy]));
+  }
+  // relax=true のときは「やさしい」で はんてい（2かいめの ちょうせん）
+  function judge(relax) {
+    const d = STROKES[wr.ch], N = 96, k = N / 109, cfg = relax ? STRICT.easy : (STRICT[st.strict] || STRICT.normal), free = wr.mode === 'free';
+    const mk = () => {
+      const c = document.createElement('canvas'); c.width = c.height = N;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#000'; return x;
+    };
+    const paths = d.s.map(p => new Path2D(p));
+    const ga = mk(); ga.setTransform(k, 0, 0, k, 0, 0); ga.lineWidth = 7; paths.forEach(p => ga.stroke(p));
+    const gb = mk(); gb.setTransform(k, 0, 0, k, 0, 0); gb.lineWidth = 7 + 2 * cfg.m; paths.forEach(p => gb.stroke(p));
+    const A = ga.getImageData(0, 0, N, N).data, B = gb.getImageData(0, 0, N, N).data;
+    const pts = free ? fit(A, N, 3.5 * k) : wr.strokes;
+    const ic = mk(); ic.lineWidth = N * 0.075; pts.forEach(s => drawStroke(ic, s, N));
+    const C = ic.getImageData(0, 0, N, N).data;
+    let g = 0, cov = 0, ink = 0, out = 0;
+    for (let i = 3; i < A.length; i += 4) {
+      const a = A[i] > 100, b = B[i] > 100, c = C[i] > 100;
+      if (a) { g++; if (c) cov++; }
+      if (c) { ink++; if (!b) out++; }
+    }
+    // 1かくずつ なぞれているか（かきわすれた せんが ないか）
+    const needEach = cfg.each - (free ? 0.08 : 0);
+    const missing = paths.some(p => {
+      const one = mk(); one.setTransform(k, 0, 0, k, 0, 0); one.lineWidth = 7; one.stroke(p);
+      const D = one.getImageData(0, 0, N, N).data;
+      let n = 0, hit = 0;
+      for (let i = 3; i < D.length; i += 4) if (D[i] > 100) { n++; if (C[i] > 100) hit++; }
+      return n && hit / n < needEach;
+    });
+    const coverage = g ? cov / g : 0, outside = ink ? out / ink : 1;
+    const needCov = cfg.cov - (free ? 0.08 : 0), maxOut = cfg.out + (free ? 0.08 : 0);
+    const pass = coverage >= needCov && outside <= maxOut && !missing;
+    return { pass, perfect: pass && wr.strokes.length === d.s.length, need: d.s.length };
+  }
+  return Object.assign(wr, {
+    set(ch, mode) { wr.ch = ch; wr.mode = mode || 'trace'; wr.strokes = []; guide(); redraw(); },
+    play, judge,
+    undo() { wr.strokes.pop(); redraw(); },
+    clear() { wr.strokes = []; redraw(); },
+    destroy() { ro.disconnect(); clearTimeout(timer); }
+  });
+}
+
+// しっぱいを みせない：1かいめ → いっしょに なぞる、2かいめ → やさしい はんてい、3かいめ → かならず できた
+const HELP_MSG = ['いっしょに なぞってみよう', 'おてほんを みながら ゆっくり なぞろう'];
+function checkWriting(wr, fails) {
+  if (!wr.strokes.length) return { empty: true };
+  const r = wr.judge(fails >= 1);
+  if (r.pass) return r;
+  if (fails >= 2) return { pass: true, forced: true, perfect: false, need: r.need };
+  return r;
+}
+function praiseFor(r, then, free) {
+  if (r.forced) return praise('maru', 'よく がんばったね！', then);
+  if (r.perfect) return praise('hanamaru', free ? 'すごい！ じぶんで かけたね' : 'じょうずに かけたね！', addHanamaru(then));
+  praise('maru', `よく かけたね！ つぎは ${r.need}かいで かいてみよう`, then);
+}
+
+/* ================= ステージ ================= */
+function startStage(line, idx) {
+  cur.mode = 'line'; cur.line = line; cur.idx = idx;
+  const t = stageType(line.stages[idx]);
+  go('stage', `${line.kana}　つぎは ${line.stations[idx + 1][1]}`, null);
+  if (t === 'wr') writeStage(line, idx);
+  else if (t === 'sn') stationTask(line, idx);
+  else readStage(line, idx);
+}
+// ことばを 1もじずつ かく ときの うえの ひょうじ（かかない もじは さいしょから はいっている）
+function wordPills(word, blanks, i) {
+  const done = new Set(blanks.slice(0, i)), now = blanks[i];
+  return `<div class="pills">${[...word].map((c, k) => {
+    if (c === ' ') return '<span class="pill given small"></span>';
+    if (!blanks.includes(k)) return `<span class="pill given${STROKES[c] ? '' : ' small'}">${c}</span>`;
+    if (done.has(k)) return `<span class="pill ok">${c}</span>`;
+    return `<span class="pill${k === now ? ' now' : ''}"></span>`;
+  }).join('')}</div>`;
+}
+
+// かく がめん（もじ・ことば・えきめい で つかう）
+function writeSession({ items, top, say, onDone, music = 'write', goalText }) {
+  const v = $('#v-stage');
+  v.classList.add('fill');
+  bgm(music);
+  v.innerHTML = `<div class="ws"><div class="ws-top"><div class="ws-row" id="wsTop"></div><p class="ws-goal" id="wsGoal"></p></div>
+    <div class="ws-body"><div class="stage-area" id="area"></div>
+      <div class="panel">
+        <div class="model"><span class="model-ch" id="modelCh"></span></div>
+        <p class="strokes"><b id="kStrokes"></b> かいで かくよ</p>
+        <button class="btn" type="button" id="kPlay">${PLAY} おてほん</button>
+        <button class="btn" type="button" id="kSay">${SPK} きく</button>
+        <div class="row"><button class="btn sm" type="button" id="kUndo">ひとつ もどす</button><button class="btn sm" type="button" id="kClear">ぜんぶ けす</button></div>
+        <button class="btn big red" type="button" id="kDone">できた！</button>
+        <p class="msg" id="kMsg" aria-live="polite"></p>
+      </div></div></div>`;
+  dropWriter();
+  const wr = activeWriter = makeWriter(v.querySelector('#area'));
+  let i = 0, fails = 0;
+  const setMsg = m => { v.querySelector('#kMsg').textContent = m; };
+  wr.onInk = () => setMsg('');
+  function show() {
+    const it = items[i];
+    fails = 0;
+    v.querySelector('#wsTop').innerHTML = top(i);
+    v.querySelector('#wsGoal').innerHTML = goalText ? goalText(i) : '';
+    v.querySelector('#modelCh').textContent = it.c;
+    v.querySelector('#kStrokes').textContent = STROKES[it.c].s.length;
+    setMsg('');
+    wr.set(it.c, 'trace');
+    const k = i;
+    setTimeout(() => { if (i === k && activeWriter === wr) { speak(say(k)); wr.play(); } }, 350);
+  }
+  v.querySelector('#kPlay').addEventListener('click', () => wr.play());
+  v.querySelector('#kSay').addEventListener('click', () => { if (i < items.length) speak(say(i)); });
+  v.querySelector('#kUndo').addEventListener('click', () => { wr.undo(); setMsg(''); });
+  v.querySelector('#kClear').addEventListener('click', () => { wr.clear(); setMsg(''); });
+  v.querySelector('#kDone').addEventListener('click', () => {
+    const r = checkWriting(wr, fails), it = items[i];
+    if (r.empty) { setMsg('うすい もじを なぞってね'); speak('うすい もじを なぞってね'); return; }
+    if (!r.pass) {
+      const m = HELP_MSG[Math.min(fails, 1)];
+      fails++; sfx.soft(); setMsg(m); speak(m);
+      wr.clear(); setTimeout(() => wr.play(), 500);
+      return;
+    }
+    if (!r.forced) { const mark = st.w[it.c] || (st.w[it.c] = {}); mark.t = 1; save(); }
+    praiseFor(r, () => {
+      i++;
+      if (i < items.length) show();
+      else { dropWriter(); onDone(); }
+    });
+  });
+  show();
+}
+// あたらしい もじを 1つずつ かく（えきめい・ことばの まえ）
+function charSession(chars, goalText, onDone) {
+  const items = chars.map(c => ({ c }));
+  writeSession({
+    items,
+    top: i => `<div class="pills">${items.map((x, k) => `<span class="pill${k < i ? ' ok' : k === i ? ' now' : ''}">${x.c}</span>`).join('')}</div>`,
+    goalText: i => goalText(items.length - i),
+    say: i => items[i].c,
+    onDone
+  });
+}
+function writeStage(line, idx) {
+  const to = line.stations[idx + 1][1];
+  charSession([...line.stages[idx][1]], n => `あと <b>${n}</b>もじで <b>${to}</b>`, () => stationTask(line, idx));
+}
+
+// 読む ステージ（カタカナ）
+function readStage(line, idx) {
+  const sg = line.stages[idx], t = stageType(sg), v = $('#v-stage');
+  v.classList.remove('fill');
+  bgm('quiz');
+  const learned = learnedUpTo(line, idx);
+  if (t === 'rr') {
+    const chars = [...sg[1]];
+    v.innerHTML = `<div class="intro"><h2>あたらしい カタカナ</h2><p>さわると こえが でるよ。したの ひらがなと おなじ おとだよ</p>
+      <div class="pairs">${chars.map(c => `<button class="pair" type="button" data-c="${c}"><b>${c}</b><span>${toScript(c, 'h')}</span></button>`).join('')}</div>
+      <button class="btn big red" type="button" id="qGo">クイズ スタート</button></div>`;
+    v.querySelectorAll('.pair').forEach(b => b.addEventListener('click', () => speak(b.dataset.c)));
+    v.querySelector('#qGo').addEventListener('click', () => runQuiz(line, idx, makeCharQs(chars, learned, 6)));
+    setTimeout(() => speak('あたらしい カタカナを おぼえよう'), 300);
+  } else {
+    runQuiz(line, idx, makeCharQs(learned, learned, 8));
+  }
+}
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function sample(pool, n) {
+  let out = [];
+  while (out.length < n) {
+    const nx = shuffle(pool.slice());
+    if (out.length && nx.length > 1 && nx[0] === out[out.length - 1]) nx.push(nx.shift());
+    out = out.concat(nx);
+  }
+  return out.slice(0, n);
+}
+const NO_HEAR = ['ヂ', 'ヅ'];
+function makeCharQs(targets, pool, n) {
+  const kinds = ['hear', 'k2h', 'h2k'];
+  return sample(targets, n).map((c, i) => {
+    const kind = NO_HEAR.includes(c) ? 'k2h' : kinds[i % 3];
+    const others = shuffle(pool.filter(x => x !== c && !sameSound(x, c)));
+    const opts = shuffle([c, ...others.slice(0, Math.min(3, others.length))]);
+    return { kind, c, opts: opts.map(x => ({ label: kind === 'k2h' ? toScript(x, 'h') : x, ok: x === c })) };
+  });
+}
+// クイズ：まちがえても ×は ださず、こたえを そっと しらせる
+function runQuiz(line, idx, qs) {
+  const v = $('#v-stage');
+  let i = 0, firstTry = 0, miss = false, lock = false;
+  bgm('quiz');
+  v.innerHTML = `<div class="qhead"><div class="dots" id="qDots"></div><button class="btn" type="button" id="qSay"></button></div>
+    <div id="qPrompt"></div><div class="choices" id="qChoices"></div>`;
+  const sayBtn = v.querySelector('#qSay');
+  let sayFn = null;
+  sayBtn.addEventListener('click', () => sayFn && sayFn());
+  function show() {
+    const q = qs[i];
+    miss = false; lock = false;
+    v.querySelector('#qDots').innerHTML = qs.map((_, k) => `<i class="${k < i ? 'done' : ''}${k === i ? ' now' : ''}"></i>`).join('');
+    const pr = v.querySelector('#qPrompt'), box = v.querySelector('#qChoices');
+    if (q.kind === 'hear') {
+      pr.innerHTML = `<p class="ask">きこえた もじは どれかな？</p><button class="btn say-big" type="button" id="bigSay" aria-label="もういちど きく">${SPK}</button>`;
+      pr.querySelector('#bigSay').addEventListener('click', () => speak(q.c));
+      sayBtn.innerHTML = SPK + ' もういちど きく';
+      sayFn = () => speak(q.c);
+      setTimeout(() => { if (qs[i] === q && view === 'stage') speak(q.c); }, 300);
+    } else if (q.kind === 'k2h') {
+      pr.innerHTML = `<p class="ask">この カタカナ、ひらがなで どれ？</p><div class="word">${q.c}</div>`;
+      sayBtn.innerHTML = SPK + ' よんでもらう';
+      sayFn = () => speak(q.c);
+    } else {
+      pr.innerHTML = `<p class="ask">カタカナで かくと どれ？</p><div class="word">${toScript(q.c, 'h')}</div>`;
+      sayBtn.innerHTML = SPK + ' よんでもらう';
+      sayFn = () => speak(q.c);
+    }
+    box.innerHTML = '';
+    q.opts.forEach(o => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'choice'; b.textContent = o.label;
+      b.addEventListener('click', () => answer(b, o.ok, q));
+      box.append(b);
+    });
+  }
+  function answer(b, ok, q) {
+    if (lock || b.disabled) return;
+    if (ok) {
+      lock = true;
+      b.classList.remove('hint'); b.classList.add('right'); sfx.ok();
+      if (!miss) firstTry++;
+      setTimeout(() => speak(q.c), 200);
+      setTimeout(() => { if (view !== 'stage') return; i++; i < qs.length ? show() : finish(); }, 1300);
+    } else {
+      b.classList.add('dim'); b.disabled = true; sfx.soft();
+      if (!miss) {
+        miss = true;
+        const right = [...v.querySelectorAll('#qChoices .choice')][q.opts.findIndex(o => o.ok)];
+        if (right) right.classList.add('hint');
+      }
+      setTimeout(() => speak(q.c), 300);
+    }
+  }
+  function finish() {
+    const next = () => stationTask(line, idx);
+    if (firstTry >= Math.ceil(qs.length * 0.8)) praise('hanamaru', 'ぜんぶ できたね！ はなまる！', addHanamaru(next));
+    else praise('maru', 'ぜんぶ できたね！', next);
+  }
+  show();
+}
+
+/* ================= でんしゃことば ================= */
+// へんせいの くぎり：[{ n, start, len, color }]
+function trainsOf(s) {
+  let start = 0;
+  return TRAINS[s].map((len, n) => { const t = { n, start, len, color: TRAIN_COLORS[n % TRAIN_COLORS.length] }; start += len; return t; });
+}
+const trainAt = (s, i) => trainsOf(s).find(t => i < t.start + t.len);
+// 1りょうぶんの え（head=せんとう しゃりょう、on=つながっている）。せんとうは みぎむき
+function carSVG(color, head, on) {
+  if (!on) return '<svg viewBox="0 0 120 56" aria-hidden="true"><rect x="3" y="6" width="114" height="40" rx="8" fill="none" stroke="var(--steel)" stroke-width="3" stroke-dasharray="7 6"/></svg>';
+  const body = head ? 'M8 6 H100 Q117 6 117 24 V46 H3 V11 Q3 6 8 6 Z' : 'M8 6 H112 Q117 6 117 11 V46 H3 V11 Q3 6 8 6 Z';
+  return `<svg viewBox="0 0 120 56" aria-hidden="true"><path d="${body}" fill="var(--steel)" stroke="var(--ink)" stroke-width="2.5"/>
+    ${head ? '<path d="M100 12 Q110 13 112 24 H100 Z" fill="var(--window)"/>' : ''}
+    ${(head ? [12, 40, 68] : [16, 48, 80]).map(x => `<rect x="${x}" y="12" width="22" height="12" rx="2" fill="var(--window)"/>`).join('')}
+    <rect x="3" y="29" width="114" height="5" fill="${color}"/>
+    <g fill="var(--ink)"><circle cx="24" cy="49" r="5"/><circle cx="38" cy="49" r="5"/><circle cx="82" cy="49" r="5"/><circle cx="96" cy="49" r="5"/></g></svg>`;
+}
+function consistHTML(t, filled, hl) {
+  return `<div class="consist"><div class="consist-in">${Array.from({ length: t.len }, (_, k) =>
+    `<span class="car${k === hl ? ' new' : ''}">${carSVG(t.color, k === 0, k < filled)}</span>`).join('')}</div></div>`;
+}
+function openWords(s) {
+  st.wscript = s; save();
+  go('words', 'でんしゃことば');
+  const v = $('#v-words'), list = TWORDS[s], done = st.words[s];
+  const t = done < list.length ? trainAt(s, done) : null, filled = t ? done - t.start : 0;
+  const top = t
+    ? `<p class="next-label">${t.n + 1}ばんめの でんしゃ（${t.len}りょう へんせい）</p>${consistHTML(t, filled)}
+       <p class="ws-goal">あと <b>${t.len - filled}</b>りょう つないだら しゅっぱつ</p>
+       <button class="btn big go" type="button" id="wGo" style="--lc:${t.color}">「${esc(list[done].w)}」を かく</button>`
+    : '<p class="next-label">ぜんぶの でんしゃが できたよ！</p><p class="ws-goal">すきな ことばを えらんで もういちど かけるよ</p>';
+  v.innerHTML = `<div class="row" style="margin-bottom:14px"><div class="seg" id="wScript"><button type="button" data-s="h">ひらがな</button><button type="button" data-s="k">カタカナ</button></div></div>
+    <div class="line-top">${top}</div>
+    <div class="wlist">${trainsOf(s).map(tr => `<div class="wtrain"><b>${tr.n + 1}ばんめの でんしゃ</b><div class="wchips">${list.slice(tr.start, tr.start + tr.len).map((o, k) => {
+      const i = tr.start + k, state = i < done ? 'done' : i === done ? 'now' : '';
+      return `<button class="stage-tag ${state}" type="button" data-i="${i}" ${state ? '' : 'disabled'}>${o.e ? `<span class="wemo">${o.e}</span>` : ''}${esc(o.w)}</button>`;
+    }).join('')}</div></div>`).join('')}</div>`;
+  v.querySelectorAll('#wScript button').forEach(b => {
+    b.classList.toggle('on', b.dataset.s === s);
+    b.addEventListener('click', () => { if (b.dataset.s !== s) openWords(b.dataset.s); });
+  });
+  const wGo = v.querySelector('#wGo');
+  if (wGo) wGo.addEventListener('click', () => wordStage(s, done));
+  v.querySelectorAll('.wchips .stage-tag:not(:disabled)').forEach(b => b.addEventListener('click', () => wordStage(s, +b.dataset.i)));
+  if (t) setTimeout(() => { if (view === 'words') speak(`つぎの ことばは、${list[done].w}`); }, 300);
+}
+// ことばの まえに、その ことばで はじめて でてくる もじを れんしゅう
+function wordStage(s, i) {
+  const list = TWORDS[s], it = list[i];
+  cur.mode = 'words'; cur.ws = s;
+  go('stage', `でんしゃことば　「${it.w}」`, null);
+  const seen = new Set();
+  list.slice(0, i).forEach(o => freshChars(o.w, seen));
+  const fresh = freshChars(it.w, seen);
+  const writeWord = () => {
+    const blanks = writable(it.w), chars = [...it.w], items = blanks.map(k => ({ c: chars[k] }));
+    writeSession({
+      items,
+      top: k => `${it.e ? `<span class="ws-emo">${it.e}</span>` : ''}${wordPills(it.w, blanks, k)}`,
+      goalText: k => `あと <b>${items.length - k}</b>もじで 1りょう つながるよ`,
+      say: k => k === 0 ? `${it.w}。${items[0].c}` : items[k].c,
+      onDone: () => coupled(s, i)
+    });
+  };
+  if (fresh.length) charSession(fresh, n => `あたらしい もじ あと <b>${n}</b>こ。そのあと「<b>${esc(it.w)}</b>」を かくよ`, writeWord);
+  else writeWord();
+}
+// 1りょう つながる。へんせいが できたら しゅっぱつして カード
+function coupled(s, i) {
+  dropWriter(); bgmStop(); hush();
+  const list = TWORDS[s], fresh = i === st.words[s];
+  if (!fresh) {
+    const b = overlay(`<p>「${esc(list[i].w)}」が かけたね！</p><button class="btn big" type="button" id="cBtn">つぎへ</button>`);
+    b.querySelector('#cBtn').addEventListener('click', () => { closeOverlay(); openWords(s); });
+    return;
+  }
+  st.words[s] = i + 1; save();
+  const t = trainAt(s, i), filled = i - t.start + 1, full = filled === t.len;
+  const b = overlay(`<p>${full ? `${t.len}りょう へんせいの でんしゃが できた！` : `${filled}りょうめが つながった！`}</p>${consistHTML(t, filled, filled - 1)}
+    <button class="btn big go" type="button" id="cBtn" style="--lc:${t.color}">${full ? 'しゅっぱつ！' : 'つぎへ'}</button>`);
+  setTimeout(() => sfx.couple(), 350);
+  setTimeout(() => speak(full ? `${t.len}りょう へんせいの でんしゃが できた` : `${filled}りょうめ、れんけつ`), 1000);
+  const btn = b.querySelector('#cBtn');
+  btn.addEventListener('click', () => {
+    if (!full) { closeOverlay(); openWords(s); return; }
+    btn.disabled = true; hush();
+    sfx.door();
+    setTimeout(() => { if (!reduceMotion()) b.querySelector('.consist').classList.add('leave'); sfx.leave(); }, 1300);
+    setTimeout(() => {
+      const card = pickCard(null);
+      if (card) showCardReward(card, 'しゅっぱつ しんこう！ カードを ゲット！', () => openWords(s));
+      else { closeOverlay(); openWords(s); }
+    }, 4200);
+  });
+}
+
+/* ================= じゆうれんしゅう ================= */
+const freeState = { writing: false };
+const markHTML = c => { const w = st.w[c]; if (!w) return ''; return w.f ? '<i class="mk m2"></i>' : '<i class="mk"></i>'; };
+function gridEl(rows, s, onPick) {
+  const wrap = document.createElement('div');
+  wrap.className = 'gojuon'; wrap.dir = 'rtl';
+  const inner = document.createElement('div'); inner.className = 'gojuon-in'; wrap.append(inner);
+  for (const r of rows) {
+    const col = document.createElement('div'); col.className = 'col'; col.dir = 'ltr';
+    for (const c of cells(r, s)) {
+      if (!c) { const e = document.createElement('span'); e.className = 'cell empty'; col.append(e); continue; }
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'cell';
+      b.innerHTML = `<span>${c}</span>${markHTML(c)}`;
+      b.addEventListener('click', () => onPick(c));
+      col.append(b);
+    }
+    inner.append(col);
+  }
+  return wrap;
+}
+function openFree() {
+  freeState.writing = false;
+  go('free', 'じゆうれんしゅう', 'write');
+  const v = $('#v-free');
+  v.classList.remove('fill');
+  v.innerHTML = `<div class="row" style="margin-bottom:12px"><div class="seg" id="fScript"><button type="button" data-s="h">ひらがな</button><button type="button" data-s="k">カタカナ</button></div></div>
+    <p style="margin:0 0 8px;text-align:center;font-weight:700;color:var(--ink-soft)">もじを さわってね</p>
+    <div id="g1"></div><p class="subhead">てんてん・まる</p><div id="g2"></div>
+    <div class="legend"><span><i class="mk"></i>なぞれた</span><span><i class="mk m2"></i>みて かけた</span></div>`;
+  v.querySelectorAll('#fScript button').forEach(b => {
+    b.classList.toggle('on', b.dataset.s === st.free);
+    b.addEventListener('click', () => { st.free = b.dataset.s; save(); openFree(); });
+  });
+  v.querySelector('#g1').append(gridEl(ROWS, st.free, openKanaCard));
+  v.querySelector('#g2').append(gridEl(DROWS, st.free, openKanaCard));
+}
+const hl = (w, c) => { const i = w.indexOf(c); return i < 0 ? esc(w) : esc(w.slice(0, i)) + `<b>${c}</b>` + esc(w.slice(i + c.length)); };
+function glyphSVG(c) {
+  const d = STROKES[c];
+  return `<svg viewBox="0 0 109 109" aria-hidden="true"><line class="cr" x1="54.5" y1="1" x2="54.5" y2="108"/><line class="cr" x1="1" y1="54.5" x2="108" y2="54.5"/>
+    ${d.s.map(p => `<path class="st" d="${p}"/>`).join('')}${d.s.map(p => `<path class="an" d="${p}"/>`).join('')}
+    ${d.n.map((p, i) => `<text class="num" x="${p[0]}" y="${p[1]}">${i + 1}</text>`).join('')}</svg>`;
+}
+function animateGlyph(root) {
+  if (reduceMotion()) return;
+  let t = 0;
+  root.querySelectorAll('.an').forEach(p => {
+    const len = p.getTotalLength(), dur = Math.max(420, len * 15);
+    p.style.strokeDasharray = len;
+    if (p.animate) p.animate([{ strokeDashoffset: len, opacity: 1 }, { strokeDashoffset: 0, opacity: 1 }], { duration: dur, delay: t, fill: 'forwards' });
+    t += dur + 200;
+  });
+}
+function openKanaCard(c) {
+  const list = allChars(st.free), i = list.indexOf(c), { w, e } = W[c] || { w: '', e: '' };
+  const body = sheet(`<div class="kcard">
+      <div class="kcard-glyph" id="kg">${glyphSVG(c)}</div>
+      <div class="kcard-word">${e ? `<span class="emo">${e}</span>` : ''}<span>${w ? hl(w, c) : '<small style="font:700 1.1rem var(--font-ui);color:var(--ink-soft)">あまり つかわない もじだよ</small>'}</span></div>
+      <div class="row">
+        <button class="btn nav" type="button" id="cPrev" aria-label="まえの もじ">‹</button>
+        <button class="btn" type="button" id="cSay">${SPK} きく</button>
+        <button class="btn" type="button" id="cPlay">${PLAY} かきじゅん</button>
+        <button class="btn red" type="button" id="cWrite">かいてみる</button>
+        <button class="btn nav" type="button" id="cNext" aria-label="つぎの もじ">›</button>
+      </div></div>`);
+  const say = () => speak(w ? `${c}。${w.replace(/\s/g, '')}` : c);
+  body.querySelector('#cSay').addEventListener('click', say);
+  body.querySelector('#cPlay').addEventListener('click', () => { const g = body.querySelector('#kg'); g.innerHTML = glyphSVG(c); animateGlyph(g); });
+  body.querySelector('#cPrev').addEventListener('click', () => openKanaCard(list[(i - 1 + list.length) % list.length]));
+  body.querySelector('#cNext').addEventListener('click', () => openKanaCard(list[(i + 1) % list.length]));
+  body.querySelector('#cWrite').addEventListener('click', () => { closeSheet(); freeWrite(c); });
+  animateGlyph(body.querySelector('#kg'));
+  say();
+}
+function freeWrite(c) {
+  freeState.writing = true;
+  go('free', 'じゆうれんしゅう　かく', 'write');
+  const v = $('#v-free');
+  v.classList.add('fill');
+  const list = allChars(st.free);
+  v.innerHTML = `<div class="ws" style="grid-template-rows:minmax(0,1fr)"><div class="ws-body"><div class="stage-area" id="area"></div>
+    <div class="panel">
+      <div class="row"><button class="btn nav" type="button" id="fPrev" aria-label="まえの もじ">‹</button><span class="model-ch" id="modelCh"></span><button class="btn nav" type="button" id="fNext" aria-label="つぎの もじ">›</button></div>
+      <p class="strokes"><b id="kStrokes"></b> かいで かくよ</p>
+      <div class="seg" id="fMode"><button type="button" data-m="trace">なぞる</button><button type="button" data-m="free">みて かく</button></div>
+      <div class="row"><button class="btn sm" type="button" id="kPlay">${PLAY} おてほん</button><button class="btn sm" type="button" id="kSay">${SPK} きく</button></div>
+      <div class="row"><button class="btn sm" type="button" id="kUndo">ひとつ もどす</button><button class="btn sm" type="button" id="kClear">ぜんぶ けす</button></div>
+      <button class="btn big red" type="button" id="kDone">できた！</button>
+      <p class="msg" id="kMsg" aria-live="polite"></p>
+    </div></div></div>`;
+  dropWriter();
+  const wr = activeWriter = makeWriter(v.querySelector('#area'));
+  let fails = 0;
+  const setMsg = m => { v.querySelector('#kMsg').textContent = m; };
+  wr.onInk = () => setMsg('');
+  const paintMode = () => v.querySelectorAll('#fMode button').forEach(b => b.classList.toggle('on', b.dataset.m === st.freeMode));
+  function show(ch) {
+    c = ch; fails = 0;
+    v.querySelector('#modelCh').textContent = c;
+    v.querySelector('#kStrokes').textContent = STROKES[c].s.length;
+    paintMode(); setMsg('');
+    wr.set(c, st.freeMode);
+    setTimeout(() => { speak(c); wr.play(); }, 300);
+  }
+  const step = d => show(list[(list.indexOf(c) + d + list.length) % list.length]);
+  v.querySelector('#fPrev').addEventListener('click', () => step(-1));
+  v.querySelector('#fNext').addEventListener('click', () => step(1));
+  v.querySelector('#fMode').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; st.freeMode = b.dataset.m; save(); show(c); });
+  v.querySelector('#kPlay').addEventListener('click', () => wr.play());
+  v.querySelector('#kSay').addEventListener('click', () => speak(c));
+  v.querySelector('#kUndo').addEventListener('click', () => { wr.undo(); setMsg(''); });
+  v.querySelector('#kClear').addEventListener('click', () => { wr.clear(); setMsg(''); });
+  v.querySelector('#kDone').addEventListener('click', () => {
+    const r = checkWriting(wr, fails), free = st.freeMode === 'free';
+    if (r.empty) { setMsg('マスの なかに かいてみよう'); return; }
+    if (!r.pass) {
+      const m = free ? 'おてほんを みてから もういちど かいてみよう' : HELP_MSG[Math.min(fails, 1)];
+      fails++; sfx.soft(); setMsg(m); speak(m);
+      wr.clear(); setTimeout(() => wr.play(), 500);
+      return;
+    }
+    if (!r.forced) { const mark = st.w[c] || (st.w[c] = {}); if (free) mark.f = 1; else mark.t = 1; save(); }
+    fails = 0;
+    praiseFor(r, () => wr.clear(), free);
+  });
+  show(c);
+}
+
+/* ================= ぜんがめん ================= */
+// つかえる ばしょ（Safari など）でだけ ボタンを だす
+const fsBtn = $('#fsBtn'), fsRoot = document.documentElement;
+const fsOn = () => document.fullscreenElement || document.webkitFullscreenElement;
+// ホーム画面から ひらいた ときは もともと がめん いっぱい なので だささない
+const standalone = navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+fsBtn.hidden = standalone || !(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+const paintFs = () => {
+  fsBtn.textContent = fsOn() ? 'もとに もどす' : 'ぜんがめん';
+  fsRoot.classList.toggle('is-fs', !!fsOn());
+};
+fsBtn.addEventListener('click', () => {
+  try {
+    const r = fsOn()
+      ? (document.exitFullscreen || document.webkitExitFullscreen).call(document)
+      : (fsRoot.requestFullscreen || fsRoot.webkitRequestFullscreen).call(fsRoot);
+    if (r && r.catch) r.catch(() => { fsBtn.hidden = true; });
+  } catch (e) { fsBtn.hidden = true; }
+});
+document.addEventListener('fullscreenchange', paintFs);
+document.addEventListener('webkitfullscreenchange', paintFs);
+paintFs();
+
+/* ================= はじめ ================= */
+// きろくが けされにくい ように たのんでおく（できない ばしょでは なにも しない）
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
+loadMelodies();
+updateStats();
+openHome();
+})();
+</script>
+</body></html>
