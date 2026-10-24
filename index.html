@@ -31,6 +31,10 @@
   --mg:#009CD2;
   --nb:#00AC9B;
   --mt:#0079C2;
+  --silver:#7E8A97;
+  --silver-bg:#EEF1F4;
+  --gold:#C08A12;
+  --gold-bg:#FFF3CF;
   --font-ui:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
   --font-kana:"Klee One","YuKyokasho","Hiragino Mincho ProN",serif;
   --font-emoji:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
@@ -121,7 +125,7 @@ main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
 
 /* 路線図 */
 .line-top{display:grid;justify-items:center;gap:12px;margin-bottom:22px}
-.route{list-style:none;margin:0 auto;padding:0;max-width:720px}
+.route{list-style:none;margin:0 auto;padding:0;max-width:880px}
 .stop{--lc:var(--mg);display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:76px;position:relative}
 .stop::before{content:"";position:absolute;left:22px;top:0;bottom:0;width:12px;background:var(--lc)}
 .stop:first-child::before{top:50%}
@@ -137,6 +141,18 @@ main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
 .stop.todo .stop-name b{color:var(--ink-soft)}
 .stage-tag{min-width:0;max-width:240px;padding:6px 12px;border:2.5px solid var(--ink);border-radius:12px;background:var(--paper);cursor:pointer;
   font:600 1.25rem/1.2 var(--font-kana);color:var(--ink);text-align:center;box-shadow:0 3px 0 var(--ink)}
+.stop-act{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.stamp{display:block;width:48px;height:48px;flex:none}
+.stamp-sm{width:40px;height:40px}
+.stamp-big{width:min(190px,48vw);height:auto}
+.stamp-arrive{width:110px;height:110px;animation:stampin .45s cubic-bezier(.3,1.6,.5,1) 3.4s both}
+.stamp-in{animation:stampin .5s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes stampin{from{transform:scale(1.8);opacity:0}to{transform:none;opacity:1}}
+.chal{min-height:44px;padding:4px 12px;border:2.5px solid var(--ink);border-radius:12px;background:var(--paper);box-shadow:0 3px 0 var(--ink);
+  font:900 .95rem/1.2 var(--font-ui);color:var(--ink);cursor:pointer}
+.chal:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.chal.lv2{background:var(--silver-bg);border-color:var(--silver);box-shadow:0 3px 0 var(--silver)}
+.chal.lv3{background:var(--gold-bg);border-color:var(--gold);box-shadow:0 3px 0 var(--gold)}
 .stage-tag.done{background:var(--bg)}
 .stage-tag.now{background:var(--yellow)}
 .stage-tag:disabled{border-style:dashed;box-shadow:none;color:var(--ink-soft);opacity:.7;cursor:default}
@@ -704,6 +720,8 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catc
 const st = Object.assign({ hm: 0, w: {}, cards: [], prog: {}, words: {}, wscript: 'h', strict: 'normal', free: 'h', freeMode: 'trace', vol: {}, melody: true }, load());
 ['mg', 'nb', 'mt'].forEach(k => { if (typeof st.prog[k] !== 'number') st.prog[k] = 0; });
 st.words = Object.assign({ h: 0, k: 0 }, st.words);
+// 駅スタンプ：{ 路線: { 駅のばんごう: 1=なぞって とうちゃく, 2=みて かけた（ぎん）, 3=きいて かけた（きん） } }
+st.stamps = Object.assign({ mg: {}, nb: {}, mt: {} }, st.stamps);
 st.vol = Object.assign({ bgm: 1, sfx: 2 }, st.vol);
 
 /* ================= おと ================= */
@@ -778,6 +796,11 @@ const sfx = {
     const a = audio(); if (!a) return;
     const t = a.currentTime + 0.05;
     noiseHit(t, 0.12, 0.5, 'bandpass', 1800); noiseHit(t + 0.06, 0.25, 0.45, 'lowpass', 200); tone(523.25, 0.35, 0.3, 'triangle', 0.1);
+  },
+  // スタンプを おす（ポン）
+  stamp() {
+    const a = audio(); if (!a) return;
+    noiseHit(a.currentTime + 0.02, 0.18, 0.55, 'lowpass', 300); tone(392, 0.04, 0.25, 'triangle', 0.12);
   },
   // とうちゃくの チャイム
   chime() { tone(1046.5, 0, 0.6, 'sine', 0.2); tone(830.6, 0.45, 0.9, 'sine', 0.2); },
@@ -1087,6 +1110,23 @@ function boardHTML(line, idx, nameOverride) {
     <div class="board-kanji">${here[0]}</div>
     <div class="board-band"><span>${prev ? '← ' + prev[1] : ''}</span><span>${next ? next[1] + ' →' : ''}</span></div></div>`;
 }
+/* ================= 駅スタンプ ================= */
+// とうちゃく した 駅は すくなくとも ふつうの スタンプ
+const stampLevel = (line, n) => Math.max(st.stamps[line.id][n] || 0, n >= 1 && n <= st.prog[line.id] ? 1 : 0);
+function setStamp(line, n, level) { if (level > (st.stamps[line.id][n] || 0)) { st.stamps[line.id][n] = level; save(); } }
+const STAMP_NAME = ['', 'スタンプ', 'ぎんの スタンプ', 'きんの スタンプ'];
+function stampSVG(line, n, level, cls = '') {
+  const kanji = line.stations[n][0];
+  if (!level) return `<svg class="stamp ${cls}" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="none" stroke="var(--steel)" stroke-width="4" stroke-dasharray="8 7"/></svg>`;
+  const color = level >= 3 ? 'var(--gold)' : level === 2 ? 'var(--silver)' : line.color;
+  const fill = level >= 3 ? 'var(--gold-bg)' : level === 2 ? 'var(--silver-bg)' : 'var(--paper)';
+  const fs = Math.min(30, Math.floor(150 / [...kanji].length));
+  return `<svg class="stamp ${cls}" viewBox="0 0 100 100" role="img" aria-label="${esc(kanji)} ${STAMP_NAME[level]}"><g transform="rotate(-8 50 50)">
+    <circle cx="50" cy="50" r="44" fill="${fill}" stroke="${color}" stroke-width="6"/><circle cx="50" cy="50" r="35" fill="none" stroke="${color}" stroke-width="2"/>
+    ${level >= 2 ? `<path d="M50 14 l3 6 6 1 -4.5 4 1 6 -5.5 -3 -5.5 3 1 -6 -4.5 -4 6 -1z" fill="${color}"/>` : ''}
+    <text x="50" y="${50 + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Zen Maru Gothic, Hiragino Maru Gothic ProN, sans-serif" fill="${color}">${esc(kanji)}</text>
+    <path d="M26 72 H74" stroke="${color}" stroke-width="3"/></g></svg>`;
+}
 const frontTrain = color => `<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="8" y="6" width="44" height="46" rx="10" fill="${color}" stroke="var(--ink)" stroke-width="3"/>
   <rect x="14" y="13" width="32" height="16" rx="4" fill="var(--window)"/><circle cx="18" cy="40" r="3.5" fill="var(--yellow)"/><circle cx="42" cy="40" r="3.5" fill="var(--yellow)"/>
   <rect x="18" y="52" width="6" height="5" fill="var(--ink)"/><rect x="36" y="52" width="6" height="5" fill="var(--ink)"/></svg>`;
@@ -1121,10 +1161,13 @@ function openHome() {
   const course = l => {
     const p = st.prog[l.id], n = l.stages.length, done = p >= n;
     const here = l.stations[Math.min(p, n)];
+    const lv = l.stations.slice(1).map((_, k) => stampLevel(l, k + 1));
+    const cnt = x => lv.filter(v => v >= x).length;
     return `<button class="course" type="button" data-line="${l.id}" style="--lc:${l.color}">
       <span class="course-head"><span class="sym" style="--lc:${l.color}">${l.sym}</span><span><b>${l.kana}</b><small>${l.kanji}</small></span></span>
       <span class="course-goal">${l.goal}</span>
       <span class="course-now">${done ? 'ゴール！ ' : 'いま '}<b>${here[1]}</b>　${p} / ${n}</span>
+      <span class="course-now">スタンプ <b>${cnt(1)}</b>こ${l.id === 'nb' ? '' : `（ぎん ${cnt(2) - cnt(3)}・きん ${cnt(3)}）`}</span>
       <span class="rail"><i style="width:${Math.round(p / n * 100)}%"></i></span></button>`;
   };
   v.innerHTML = `<p class="hello">きょうは どの でんしゃに のる？</p>
@@ -1144,7 +1187,8 @@ function openHome() {
 function openParent() {
   const volSeg = key => `<div class="seg" data-vol="${key}">${['けす', 'ちいさい', 'ふつう', 'おおきい'].map((l, i) => `<button type="button" data-v="${i}">${l}</button>`).join('')}</div>`;
   const body = sheet(`<h2>おうちの かたへ</h2>
-    <p>3つのコースは、目黒線＝ひらがなを書く、南北線＝カタカナを読む、三田線＝カタカナを書く、です。目黒線・三田線は次の駅名を1字ずつ全部なぞって書けば到着、南北線は駅名のカタカナを覚えてクイズのあと駅名を読めば到着で、車両カードを1枚もらいます。</p>
+    <p>3つのコースは、目黒線＝ひらがなを書く、南北線＝カタカナを読む、三田線＝カタカナを書く、です。目黒線・三田線は次の駅名を1字ずつ全部なぞって書けば到着、南北線は駅名のカタカナを覚えてクイズのあと駅名を読めば到着で、駅スタンプと車両カードを1枚もらいます。</p>
+    <p>着いた駅は、路線図の「チャレンジ」でお手本なしに挑戦できます（目黒線・三田線）。駅名を見てマス目のお手本なしで書けたら銀のスタンプ、声だけを聞いて書けたら金のスタンプになります。2回うまくいかない字にはお手本が出て最後まで書けますが、そのときはスタンプはそのままです。</p>
     <p>駅名に出てこない字は「でんしゃことば」で練習します。言葉を1つ書くごとに車両が1両つながり、編成ができると出発してカードがもらえます。「ヂ」「ヅ」は言葉に入れていないので、じゆうれんしゅうで練習してください。</p>
     <p>うまく書けないときは、お手本を見せながら一緒にやり直し、3回目は必ず合格になります。×や点数は出しません。</p>
     <div class="set-row"><b>BGM</b>${volSeg('bgm')}</div>
@@ -1217,7 +1261,7 @@ function openParent() {
     const b2 = sheet(`<h2>きろくを ぜんぶ けしますか？</h2><p style="text-align:center">はなまる・カード・すすんだ えきが すべて きえます。</p>
       <div class="row"><button class="btn" type="button" data-close>やめる</button><button class="btn red" type="button" id="doReset">けす</button></div>`);
     b2.querySelector('#doReset').addEventListener('click', () => {
-      st.hm = 0; st.w = {}; st.cards = []; st.prog = { mg: 0, nb: 0, mt: 0 }; st.words = { h: 0, k: 0 }; save(); updateStats(); closeSheet(); openHome();
+      st.hm = 0; st.w = {}; st.cards = []; st.prog = { mg: 0, nb: 0, mt: 0 }; st.words = { h: 0, k: 0 }; st.stamps = { mg: {}, nb: {}, mt: {} }; save(); updateStats(); closeSheet(); openHome();
     });
   });
 }
@@ -1236,7 +1280,11 @@ function openLine(id) {
     let tag = '';
     if (i > 0) {
       const state = i <= p ? 'done' : i === p + 1 ? 'now' : '';
-      tag = `<button class="stage-tag ${state}" type="button" data-i="${i - 1}" ${state ? '' : 'disabled'}>${esc(stageLabel(line.stages[i - 1]))}</button>`;
+      const lv = stampLevel(line, i);
+      // とうちゃく した 駅は スタンプと チャレンジ（南北線は よむ コースなので スタンプだけ）
+      const chal = state === 'done' && line.id !== 'nb'
+        ? `<button class="chal lv${Math.min(lv + 1, 3)}" type="button" data-c="${i - 1}">${lv < 2 ? 'ぎんに チャレンジ' : lv < 3 ? 'きんに チャレンジ' : 'もういちど チャレンジ'}</button>` : '';
+      tag = `<span class="stop-act">${i <= p ? stampSVG(line, i, lv) : ''}${chal}<button class="stage-tag ${state}" type="button" data-i="${i - 1}" ${state ? '' : 'disabled'}>${esc(stageLabel(line.stages[i - 1]))}</button></span>`;
     }
     const mark = i === Math.min(p, n) ? `<span class="train">${frontTrain(line.color)}</span>` : '<span class="dot"></span>';
     return `<li class="stop${cls}" style="--lc:${line.color}">${mark}<span class="stop-name"><b>${s[1]}</b><small>${s[0]}</small></span>${tag}</li>`;
@@ -1245,6 +1293,7 @@ function openLine(id) {
   const goBtn = v.querySelector('#goBtn');
   if (goBtn) goBtn.addEventListener('click', () => departure(line, p));
   v.querySelectorAll('.stage-tag:not(:disabled)').forEach(b => b.addEventListener('click', () => departure(line, +b.dataset.i)));
+  v.querySelectorAll('.chal').forEach(b => b.addEventListener('click', () => challengeIntro(line, +b.dataset.c)));
   if (!done) setTimeout(() => { if (view === 'line') speak(`つぎは、${line.stations[p + 1][1]}`); }, 300);
 }
 // これから やることを みせる（みとおし）
@@ -1326,14 +1375,17 @@ function arrive(line, idx) {
   dropWriter(); bgmStop(); hush();
   const fresh = idx === st.prog[line.id];
   if (fresh) { st.prog[line.id] = idx + 1; save(); }
+  setStamp(line, idx + 1, 1);
   const name = line.stations[idx + 1][1], last = idx + 1 === line.stages.length;
   const card = fresh ? pickCard(line) : null;
   const b = overlay(`<svg class="train-run${reduceMotion() ? '' : ' in'}" viewBox="0 0 200 80" aria-hidden="true">${trainSVG({ shape: 'c', body: STEEL, band: line.hex }).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</svg>
     ${boardHTML(line, idx + 1)}
+    ${stampSVG(line, idx + 1, stampLevel(line, idx + 1), 'stamp-arrive')}
     <p>${last ? `しゅうてん ${name}に つきました！<br>コース クリア！` : `${name}に つきました！`}</p>
     <button class="btn big go" type="button" id="arrBtn" style="--lc:${line.color}">${card ? 'カードを もらう' : 'つぎへ'}</button>`);
   const runFor = sfx.train() || 0;
   setTimeout(() => sfx.chime(), runFor * 1000);
+  setTimeout(() => sfx.stamp(), runFor * 1000 + 300);
   setTimeout(() => speak(last ? `しゅうてん、${name}です。コースクリア。おめでとう` : `${name}、${name}です`), runFor * 1000 + 900);
   b.querySelector('#arrBtn').addEventListener('click', () => {
     hush();
@@ -1550,18 +1602,21 @@ function startStage(line, idx) {
   else readStage(line, idx);
 }
 // ことばを 1もじずつ かく ときの うえの ひょうじ（かかない もじは さいしょから はいっている）
-function wordPills(word, blanks, i) {
+//   show=true のときは、これから かく もじも みせる（チャレンジの「みて かく」）
+function wordPills(word, blanks, i, show) {
   const done = new Set(blanks.slice(0, i)), now = blanks[i];
   return `<div class="pills">${[...word].map((c, k) => {
     if (c === ' ') return '<span class="pill given small"></span>';
     if (!blanks.includes(k)) return `<span class="pill given${STROKES[c] ? '' : ' small'}">${c}</span>`;
     if (done.has(k)) return `<span class="pill ok">${c}</span>`;
-    return `<span class="pill${k === now ? ' now' : ''}"></span>`;
+    return `<span class="pill${k === now ? ' now' : ''}">${show ? c : ''}</span>`;
   }).join('')}</div>`;
 }
 
-// かく がめん（もじ・ことば・えきめい で つかう）
-function writeSession({ items, top, say, onDone, music = 'write', goalText }) {
+// かく がめん（えきめい・ことば・チャレンジ で つかう）
+//   mode='free' は チャレンジ（マスに おてほんを ださない）。2かい うまく いかないと その もじだけ おてほんを だす（hinted）
+//   hideModel=true は みぎの おてほんの もじも かくす（きいて かく）
+function writeSession({ items, top, say, onDone, music = 'write', goalText, mode = 'trace', hideModel = false }) {
   const v = $('#v-stage');
   v.classList.add('fill');
   bgm(music);
@@ -1578,43 +1633,97 @@ function writeSession({ items, top, say, onDone, music = 'write', goalText }) {
       </div></div></div>`;
   dropWriter();
   const wr = activeWriter = makeWriter(v.querySelector('#area'));
-  let i = 0, fails = 0;
+  let i = 0, fails = 0, hinted = false, curMode = mode;
   const setMsg = m => { v.querySelector('#kMsg').textContent = m; };
+  const playBtn = v.querySelector('#kPlay');
   wr.onInk = () => setMsg('');
+  function setMode(m) {
+    curMode = m;
+    wr.set(items[i].c, m);
+    playBtn.hidden = m === 'free';
+    v.querySelector('#modelCh').textContent = hideModel && m === 'free' ? '？' : items[i].c;
+  }
   function show() {
     const it = items[i];
     fails = 0;
     v.querySelector('#wsTop').innerHTML = top(i);
     v.querySelector('#wsGoal').innerHTML = goalText ? goalText(i) : '';
-    v.querySelector('#modelCh').textContent = it.c;
     v.querySelector('#kStrokes').textContent = STROKES[it.c].s.length;
     setMsg('');
-    wr.set(it.c, 'trace');
+    setMode(mode);
     const k = i;
-    setTimeout(() => { if (i === k && activeWriter === wr) { speak(say(k)); wr.play(); } }, 350);
+    setTimeout(() => { if (i === k && activeWriter === wr) { speak(say(k)); if (curMode === 'trace') wr.play(); } }, 350);
   }
-  v.querySelector('#kPlay').addEventListener('click', () => wr.play());
+  playBtn.addEventListener('click', () => wr.play());
   v.querySelector('#kSay').addEventListener('click', () => { if (i < items.length) speak(say(i)); });
   v.querySelector('#kUndo').addEventListener('click', () => { wr.undo(); setMsg(''); });
   v.querySelector('#kClear').addEventListener('click', () => { wr.clear(); setMsg(''); });
   v.querySelector('#kDone').addEventListener('click', () => {
     const r = checkWriting(wr, fails), it = items[i];
-    if (r.empty) { setMsg('うすい もじを なぞってね'); speak('うすい もじを なぞってね'); return; }
+    if (r.empty) { const m = curMode === 'free' ? 'マスの なかに かいてみよう' : 'うすい もじを なぞってね'; setMsg(m); speak(m); return; }
     if (!r.pass) {
+      sfx.soft();
+      if (curMode === 'free') {
+        // チャレンジ：1かいめは もういちど、2かいめは その もじだけ おてほんを だす
+        if (fails === 0) { fails = 1; const m = 'もういちど かいてみよう'; setMsg(m); speak(m); wr.clear(); return; }
+        hinted = true; fails = 0;
+        const m = 'おてほんを だすね。なぞって みよう';
+        setMode('trace'); setMsg(m); speak(m); setTimeout(() => wr.play(), 500);
+        return;
+      }
       const m = HELP_MSG[Math.min(fails, 1)];
-      fails++; sfx.soft(); setMsg(m); speak(m);
+      fails++; setMsg(m); speak(m);
       wr.clear(); setTimeout(() => wr.play(), 500);
       return;
     }
-    if (!r.forced) { const mark = st.w[it.c] || (st.w[it.c] = {}); mark.t = 1; save(); }
+    if (!r.forced) { const mark = st.w[it.c] || (st.w[it.c] = {}); if (curMode === 'free') mark.f = 1; else mark.t = 1; save(); }
     praiseFor(r, () => {
       i++;
       if (i < items.length) show();
-      else { dropWriter(); onDone(); }
-    });
+      else { dropWriter(); onDone(hinted); }
+    }, curMode === 'free');
   });
   show();
 }
+/* ----- チャレンジ（おてほん なしで えきめいを かく → 駅スタンプが グレードアップ） ----- */
+function challengeIntro(line, idx) {
+  const n = idx + 1, level = stampLevel(line, n) < 2 ? 2 : 3, listen = level === 3;
+  hush();
+  const b = overlay(`<p>${listen ? 'きいて かく' : 'みて かく'} チャレンジ</p>
+    ${stampSVG(line, n, level, 'stamp-big')}
+    <p style="font-size:1.15rem">${listen ? 'えきの なまえを きいて' : 'うすい おてほん なしで'}<br>「${esc(line.stations[n][1])}」が かけたら ${STAMP_NAME[level]}！</p>
+    <div class="row"><button class="btn big go" type="button" id="chGo" style="--lc:${line.color}">はじめる</button><button class="btn" type="button" id="chNo">やめる</button></div>`);
+  setTimeout(() => speak(`${listen ? 'きいて かく' : 'みて かく'}チャレンジ。${line.stations[n][1]}が かけたら、${STAMP_NAME[level]}`), 300);
+  b.querySelector('#chGo').addEventListener('click', () => { closeOverlay(); challenge(line, idx, level); });
+  b.querySelector('#chNo').addEventListener('click', () => { hush(); closeOverlay(); });
+}
+function challenge(line, idx, level) {
+  cur.mode = 'line'; cur.line = line; cur.idx = idx;
+  const n = idx + 1, listen = level === 3;
+  go('stage', `${line.kana}　チャレンジ`, null);
+  const name = stationName(line, n), chars = [...name], blanks = writable(name), items = blanks.map(k => ({ c: chars[k] }));
+  writeSession({
+    items, mode: 'free', hideModel: listen,
+    top: i => `<div class="st-band" style="--lc:${line.color}">${stampSVG(line, n, level, 'stamp-sm')}<b style="font:900 1.15rem var(--font-ui)">${listen ? 'きいて かこう' : 'みて かこう'}</b></div>
+      ${wordPills(name, blanks, i, !listen)}`,
+    goalText: i => `おてほん なしで あと <b>${items.length - i}</b>もじ`,
+    say: i => i === 0 ? `${line.stations[n][1]}。${items[0].c}` : items[i].c,
+    onDone: hinted => challengeDone(line, idx, level, hinted)
+  });
+}
+function challengeDone(line, idx, level, hinted) {
+  dropWriter(); bgmStop(); hush();
+  const n = idx + 1, before = stampLevel(line, n), up = !hinted && level > before;
+  if (up) setStamp(line, n, level);
+  const text = up ? `${STAMP_NAME[level]}に なった！` : hinted ? 'さいごまで かけたね！ つぎは おてほん なしで いけるかな' : 'おてほん なしで かけたね！';
+  const b = overlay(`${stampSVG(line, n, stampLevel(line, n), up ? 'stamp-big stamp-in' : 'stamp-big')}<p>${text}</p>
+    <button class="btn big go" type="button" id="chBack" style="--lc:${line.color}">ろせんずに もどる</button>`);
+  if (up) { sfx.stamp(); setTimeout(() => sfx.fanfare(), 400); }
+  else sfx.ok();
+  setTimeout(() => speak(text.replace(/[！!]/g, '。')), 700);
+  b.querySelector('#chBack').addEventListener('click', () => { hush(); closeOverlay(); openLine(line.id); });
+}
+
 // 読む ステージ（南北線）：えきめいに でてくる カタカナを おぼえて クイズ
 function readStage(line, idx) {
   const v = $('#v-stage'), chars = [...line.stages[idx][1]], learned = learnedUpTo(line, idx);
