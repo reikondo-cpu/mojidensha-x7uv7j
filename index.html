@@ -735,6 +735,9 @@ function fillSt(o) {
 const st = fillSt(load());
 // きろくを まるごと いれかえる（ひかえから もどす とき・ファイルを よみこんだ とき）
 function replaceSt(o) { const s = fillSt(o); Object.keys(st).forEach(k => delete st[k]); Object.assign(st, s); }
+// claude.ai 版で 記録の ファイルを 保存する ところ（ホーム画面アプリでは null）
+let claudeDownloads = null;
+try { if (window.claude && window.claude.use) window.claude.use('downloads').then(d => { claudeDownloads = d; }, () => {}); } catch (e) {}
 // IndexedDB の ひとつの いれもの。keyPath が なければ key を じぶんで わたす
 function idbStore(name, store, keyPath) {
   let db = null;
@@ -1405,7 +1408,10 @@ function openParent() {
     save();
     const d = new Date(), p2 = n => String(n).padStart(2, '0');
     const name = `mojidensha-kiroku-${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}.json`;
-    const file = new File([JSON.stringify({ app: 'mojidensha', kiroku: st })], name, { type: 'application/json' });
+    const text = JSON.stringify({ app: 'mojidensha', kiroku: st });
+    // claude.ai 版は claude.ai の 保存（ふつうの ダウンロードは できない）
+    if (claudeDownloads) { try { await claudeDownloads.save({ filename: name, data: text }); } catch (e) {} return; }
+    const file = new File([text], name, { type: 'application/json' });
     // iPad は 共有シート（「ファイルに保存」）、つかえなければ ダウンロード
     try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } }
     catch (e) { if (e.name === 'AbortError') return; }
