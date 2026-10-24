@@ -735,6 +735,8 @@ const VOLS = [0, 0.35, 0.7, 1];
 const BGM_BASE = 0.55;
 let actx = null, ducked = false;
 const bus = {};
+// iPad の 消音モードでも 鳴らす（これが ないと Web Audio の 音は 消音モードで 出ない）
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
 function audio() {
   try {
     if (!actx) {
@@ -745,7 +747,8 @@ function audio() {
       bus.voice = actx.createGain(); bus.voice.connect(actx.destination);
       applyVol();
     }
-    if (actx.state === 'suspended') actx.resume();
+    // suspended（まだ ゆるされて いない）・interrupted（iPad で アプリを とじて もどった とき）なら うごかしなおす
+    if (actx.state !== 'running' && actx.state !== 'closed') actx.resume().catch(() => {});
     return actx;
   } catch (e) { return null; }
 }
@@ -1060,7 +1063,9 @@ function speak(text, rate = 0.85) {
   if (!a) { tts(text, rate); return; }
   if (hasTTS && (speechSynthesis.speaking || speechSynthesis.pending)) try { speechSynthesis.cancel(); } catch (e) {}
   const g = vgen;
-  Promise.all(parts.map(loadVoice)).then(bufs => {
+  // おとが とまった ままなら（まだ タッチして いない など）iPad の よみあげに する
+  const running = a.state === 'running' ? Promise.resolve() : Promise.race([a.resume(), new Promise(r => setTimeout(r, 600))]).then(() => { if (a.state !== 'running') throw new Error(a.state); });
+  Promise.all([running, ...parts.map(loadVoice)]).then(([, ...bufs]) => {
     if (g !== vgen) return;
     duck(true);
     const play = i => {
@@ -1088,13 +1093,18 @@ function tts(text, rate) {
   } catch (e) {}
 }
 const hush = () => { stopVoice(); if (hasTTS) try { speechSynthesis.cancel(); } catch (e) {} duck(false); };
-// iPad は さいしょの タッチで おとを ゆるす
-document.addEventListener('pointerdown', () => {
+// iPad は タッチで おとを ゆるす。ゆびの ときは はなした とき（pointerup・touchend・click）で ないと ゆるされない。
+// アプリを とじて もどると とまる ことが あるので、タッチの たびに audio() で うごかしなおす
+let unlocked = false;
+const unlock = e => {
   audio();
+  if (unlocked || e.type === 'pointerdown') return;
+  unlocked = true;
   preloadVoice(VOICE_FIXED);
   if (hasTTS) { try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
   if (Bgm.want && !Bgm.h) bgm(Bgm.want);
-}, { once: true });
+};
+['pointerdown', 'pointerup', 'touchend', 'click'].forEach(t => document.addEventListener(t, unlock, true));
 const SPK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9h4l5-4v14l-5-4h-4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
 const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>';
 
@@ -1275,6 +1285,8 @@ function openParent() {
     <p>うまく書けないときは、お手本を見せながら一緒にやり直し、3回目は必ず合格になります。×や点数は出しません。</p>
     <div class="set-row"><b>BGM</b>${volSeg('bgm')}</div>
     <div class="set-row"><b>こうかおん・発車メロディ</b>${volSeg('sfx')}</div>
+    <div class="set-row"><b>声のテスト</b><button class="btn sm" type="button" id="voiceTest">ならす</button></div>
+    <p id="voiceStat" style="font-size:.85rem;color:var(--ink-soft)" hidden></p>
     <div class="set-row"><b>発車メロディ</b><div class="seg" id="melSeg"><button type="button" data-v="1">ながす</button><button type="button" data-v="0">ながさない</button></div></div>
     <div class="set-row"><b>書いた字の判定</b><div class="seg" id="strictSeg"><button type="button" data-v="easy">やさしい</button><button type="button" data-v="normal">ふつう</button><button type="button" data-v="hard">きびしい</button></div></div>
     <p><b>発車メロディの音源</b>：iPad の「ファイル」にある音源を読み込むと、選んだ駅を出発するときに流れます。音源はこの iPad の中だけに保存され、ネットには送られません。読み込んでいないときは、このアプリ用のオリジナルのメロディが流れます。ファイル名に駅名（白金高輪 など）が入っていると、その駅に自動で割り当てます。</p>
@@ -1296,6 +1308,13 @@ function openParent() {
     if (s.dataset.vol === 'bgm') { const w = Bgm.want; bgm(null); bgm(w); }
     else sfx.ok();
   }));
+  // 音が 出ない ときに 状態を 見る
+  body.querySelector('#voiceTest').addEventListener('click', () => {
+    speak('じょうずに かけたね！');
+    const stat = body.querySelector('#voiceStat');
+    const show = () => { stat.hidden = false; stat.textContent = `音の状態：${actx ? actx.state : 'なし'}／声のファイル：${Object.keys(VOICE).length}／消音モード対策：${navigator.audioSession ? navigator.audioSession.type : 'なし'}`; };
+    show(); setTimeout(show, 1500);
+  });
   body.querySelector('#melSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; st.melody = b.dataset.v === '1'; save(); paint(); });
   // 発車メロディ：よみこんだ 音源の いちらん（ながす ばしょを えらべる）
   const targetOptions = sel => [['common', 'すべての駅（共通）'], ...Object.values(LINES).map(l => ['line:' + l.id, `${l.kanji}の駅（共通）`]), ...STATION_KANJI.map(k => ['st:' + k, k])]
