@@ -1,4 +1,4 @@
-const CACHE = 'mojidensha-20261027204945', VOICE = 'mojidensha-voice';
+const CACHE = 'mojidensha-20261028065541', VOICE = 'mojidensha-voice';
 self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './manifest.webmanifest', './icon-180.png']))); });
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== VOICE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {
