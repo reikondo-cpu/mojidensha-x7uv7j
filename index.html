@@ -314,10 +314,6 @@ main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
 .flip-front{position:absolute;inset:0;transform:rotateY(180deg)}
 .flip-back{display:grid;place-items:center;min-height:330px;border:3px solid var(--ink);border-radius:14px;cursor:pointer;color:var(--on-dark);
   background:repeating-linear-gradient(135deg,var(--lc) 0 18px,var(--ink) 18px 36px);font:900 4rem/1 var(--font-ui)}
-/* ぎんの スタンプを おした カード・カードの うら */
-.cstamp{position:absolute;top:16px;right:6px;z-index:1;width:30%;max-width:96px;pointer-events:none}
-.cstamp .stamp{width:100%;height:auto;filter:drop-shadow(0 1px 0 var(--paper))}
-.cflip.fresh .cstamp{animation:stampin .5s cubic-bezier(.3,1.6,.5,1) .6s both}
 /* ほし（クリアした ところを もういちど できた ときに つく）。5つで キラキラ */
 .cstars{position:absolute;top:18px;left:12px;z-index:1;display:flex;align-items:center;gap:1px;padding:1px 6px;border-radius:999px;background:var(--paper);
   font:900 .85rem/1.25 var(--font-ui);color:var(--ink);box-shadow:0 1px 0 var(--ink);pointer-events:none}
@@ -1672,16 +1668,9 @@ function cardHTML(c, opts = {}) {
   if (!c) return '';
   const art = PHOTOS[c.id] ? `<span class="tcard-photo"><img src="${PHOTOS[c.id]}" alt="" loading="lazy" decoding="async"></span>` : trainSVG(c);
   return `<div class="tcard${opts.big ? ' big' : ''}${c.sp ? ' sp' : ''}${c.old ? ' old' : ''}${starsOf(c.id) >= STAR_KIRA ? ' kira' : ''}" style="--lc:${cardColor(c)}">
-    <span class="tcard-band"></span>${art}${cardStamp(c)}${cardStars(c)}
+    <span class="tcard-band"></span>${art}${cardStars(c)}
     <span class="tcard-txt"><span class="tcard-co">${esc(c.co)}</span><span class="tcard-name">${esc(c.name)}${c.no ? ` <small class="tcard-alt">しゃしん${c.no}</small>` : ''}</span>
     <span class="tcard-run">${esc(c.run)}</span>${opts.big ? `<span class="tcard-yomi">${esc(c.yomi)}</span>` : ''}</span></div>`;
-}
-// ぎんの スタンプを おした カードの みぎうえの スタンプ（とった えきの なまえ）
-function cardStamp(c) {
-  const k = !c.sp && st.cst[c.id];
-  if (!k) return '';
-  const [id, n] = k.split(':');
-  return COURSES[id] ? `<span class="cstamp">${stampSVG(COURSES[id], +n, 2)}</span>` : '';
 }
 // ほし（st.star = { カード: かず }）。5つ まで ならべて、5つ から キラキラ・かずで みせる
 const STAR_KIRA = 5;
@@ -1692,8 +1681,8 @@ function cardStars(c) {
   return `<span class="cstars${n > STAR_KIRA ? ' many' : ''}" role="img" aria-label="ほし ${n}こ">${n > STAR_KIRA
     ? `<i class="on">★</i>×${n}` : [...Array(STAR_KIRA)].map((_, k) => `<i${k < n ? ' class="on"' : ''}>★</i>`).join('')}</span>`;
 }
-// うらが みられる カード：ぎんの スタンプを おした カードと とくべつカード
-const canTurn = c => !!(c.sp || st.cst[c.id]);
+// カードの うら（はしる ところ・いきさき・まめちしき）。第40版から どの カードも もらった ときから うらが みられる
+//   （それまでは ぎんで かけた 駅ごとに カードに ぎんの スタンプを おして、その カードだけ うらが みられた）
 function cardBackHTML(c) {
   const tv = TRIVIA[baseId(c)];
   return `<div class="tcard big tback${c.sp ? ' sp' : ''}" style="--lc:${cardColor(c)}"><span class="tcard-band"></span>
@@ -1703,10 +1692,9 @@ function cardBackHTML(c) {
       ${DEST[baseId(c)] ? `<h3>いきさき</h3><ul class="dest">${DEST[baseId(c)].map(([s, l]) => `<li><b>${esc(s)}</b><small>${esc(l)}</small></li>`).join('')}</ul>` : ''}
       ${tv ? `<h3>まめちしき</h3><p class="trivia">${tv.lines.map(lineDisp).join('<br>')}</p>` : ''}</div></div>`;
 }
-// おおきな カード。うらが みられる カードは さわると うらがえる（うらでは はしる ところと まめちしきを よむ）
-function cardView(c, fresh) {
-  if (!canTurn(c)) return cardHTML(c, { big: true });
-  return `<div class="cflip${fresh ? ' fresh' : ''}" role="button" tabindex="0" aria-label="カードを うらがえす"><div class="cflip-in">
+// おおきな カード。さわると うらがえる（うらでは はしる ところと まめちしきを よむ）
+function cardView(c) {
+  return `<div class="cflip" role="button" tabindex="0" aria-label="カードを うらがえす"><div class="cflip-in">
     <div class="cface">${cardHTML(c, { big: true })}</div><div class="cface cface-back">${cardBackHTML(c)}</div></div></div>
     <p class="cflip-hint">カードを さわると うらがえるよ</p>`;
 }
@@ -1720,40 +1708,6 @@ function bindCardView(host, c) {
   // じどうで うらがえす（じぶんで さわって いたら しない）
   turn.auto = () => { if (f.isConnected && !f.dataset.touched && !f.classList.contains('turn')) turn(true); };
   return turn;
-}
-// ぎんの スタンプ：まだ スタンプの ない カードから ランダムに 1まい えらんで、とった えきの ぎんスタンプを おす
-function stampNextCard(key) {
-  const cands = st.cards.filter(id => !st.cst[id]);
-  if (!cands.length) return null;
-  const id = cands[Math.floor(Math.random() * cands.length)];
-  st.cst[id] = key; save();
-  return CARDMAP[id];
-}
-// まだ カードに おして いない ぎんスタンプ（第24版より まえに とった ぶん・カードが なかった ぶん）
-function pendingSilver() {
-  const used = new Set(Object.values(st.cst));
-  return Object.values(COURSES).flatMap(l => Object.entries(st.stamps[l.id] || {}).filter(([, lv]) => lv >= 2).map(([n]) => l.id + ':' + n)).filter(k => !used.has(k));
-}
-// スタンプを おす → なまえと せんを よむ → うらがえして はしる ところと まめちしきを よむ
-function showStampCard(c, title, then) {
-  const b = overlay(`<p>${esc(title)}</p>${cardView(c, true)}
-    <button class="btn big" type="button" id="cardOk">やったね！</button>`);
-  const turn = bindCardView(b, c);
-  setTimeout(() => sfx.stamp(), 600);
-  setTimeout(() => voicePlay(cardSay(c)).then(() => { if (turn) turn.auto(); }), 1300);
-  b.querySelector('#cardOk').addEventListener('click', () => { hush(); closeOverlay(); if (then) then(); });
-}
-// ホームを ひらいた とき、まだ おして いない ぎんスタンプを まとめて カードに おす
-function grantPendingStamps() {
-  if (view !== 'home' || !$('#overlay').hidden || !$('#sheet').hidden || locked || !$('#rest').hidden) return;
-  const left = Math.min(pendingSilver().length, st.cards.filter(id => !st.cst[id]).length);
-  if (!left) return;
-  const next = n => {
-    const k = pendingSilver()[0], c = n > 0 && k ? stampNextCard(k) : null;
-    if (!c) { openHome(); return; }
-    showStampCard(c, left > 1 ? `ぎんの スタンプを カードに おすよ（${left - n + 1} / ${left}）` : 'ぎんの スタンプを カードに おすよ', () => next(n - 1));
-  };
-  next(left);
 }
 // ほしを つける カード：その ばしょで まえに もらった カード（st.cfrom。ばしょ＝'mg:3'（えき）・'rhw:しぶや'（ランダムえき）・'e:e1'（えほん））
 //   きろくが ない（第30版より まえに もらった）ときは from（なければ もって いる カード ぜんぶ）の なかで ほしの すくない ものから えらんで おぼえる
@@ -2055,11 +2009,10 @@ const load = () => {
 function fillSt(o) {
   // limit：つづけて つかえる じかん（ふん。0 は きめない。2じかん あけると 0ぷんから）
   // sp：もって いる とくべつカード、read：えほんでんしゃ（おはなしごとの かいすう・じかん）、pass：つうかえき（みえる じかん）
-  // cst：ぎんの スタンプを おした カード { カード: 'せん:えきの ばんごう' }（うらが みられる）
   // cmode：えきめいを かく モード（2=ぎん みて かく、3=きん きいて かく。1=ふつう なぞる は 第37版で やめた）
   // star：カードの ほしの かず { カード: かず }、cfrom：ばしょで もらった カード { 'rhw:しぶや' など: カード }（ほしを つける カード）
   // coin：コイン（コースの 駅を はじめて クリアする たびに 1まい。5まいで ガチャガチャ）、gcoin：きんの コイン（3まいで とくべつカード）
-  const s = Object.assign({ hm: 0, w: {}, cards: [], sp: [], cst: {}, star: {}, cfrom: {}, coin: 0, gcoin: 0, prog: {},words: {}, wscript: 'h', strict: 'normal', free: 'h', freeMode: 'trace', vol: {}, melody: true, limit: 20, read: {}, pass: {}, cmode: 2 }, o);
+  const s = Object.assign({ hm: 0, w: {}, cards: [], sp: [], star: {}, cfrom: {}, coin: 0, gcoin: 0, prog: {},words: {}, wscript: 'h', strict: 'normal', free: 'h', freeMode: 'trace', vol: {}, melody: true, limit: 20, read: {}, pass: {}, cmode: 2 }, o);
   // おはなしの ながさを かえた ときは、まえの じかんとは くらべられないので けす（かいすうは のこす）
   // 第21版：はんぶんの ながさに（readV 2）、第24版：1わめ 3ぶん → 12わめ 10ぶん（readV 3）
   if ((s.readV || 0) < 3) { Object.values(s.read).forEach(r => { r.times = []; }); s.readV = 3; }
@@ -2079,9 +2032,10 @@ function fillSt(o) {
       if (p) s.prog[k] = p + 1;
     });
     if (s.clr) Object.keys(s.clr).forEach(k => { s.clr[k] = shift(s.clr[k]); });
-    s.cst = Object.fromEntries(Object.entries(s.cst).map(([c, key]) => { const [k, n] = String(key).split(':'); return [c, `${k}:${+n + 1}`]; }));
     s.stnV = 2;
   }
+  // 第40版：カードに ぎんの スタンプを おすのを やめた（どの カードも うらが みられる）。おした きろく（cst）は けす
+  delete s.cst;
   Object.keys(COURSES).forEach(k => { if (!s.stamps[k]) s.stamps[k] = {}; });
   // クリアした 駅×レベル：{ コース: { 駅のばんごう: 1<<レベル の あつまり } }。コインは はじめて クリアした 駅×レベル だけ
   //   まえの きろくは、スタンプの レベル（いちばん うえ）だけ クリアした ことに する
@@ -2920,7 +2874,6 @@ function openHome() {
   $('#toZukan').addEventListener('click', openZukan);
   $('#toFree').addEventListener('click', openFree);
   $('#toParent').addEventListener('click', openParent);
-  if (pendingSilver().length) setTimeout(grantPendingStamps, 800);
 }
 // 読む 練習の 記録（大人だけが 見る）。ひとりで 読んだ 時間と、助けに 聞いた 回数
 function readStatsHTML() {
@@ -2955,8 +2908,9 @@ function openParent() {
   const body = sheet(`<h2>おうちの かたへ</h2>
     <p>ホームの上で「ひらがなを かく／カタカナを かく／カタカナを よむ」を選び、10 の路線（目黒線・南北線・三田線・東横線・田園都市線・大井町線・池上線・浅草線・グリーンライン・ブルーライン）から乗る路線を選びます。どの路線も「しゅっぱつ」から始まり、最初の駅（起点）から書きます。路線と練習の組み合わせごとに、別々に駅を進みます（これまでの記録は、目黒線の「ひらがなを かく」・南北線の「カタカナを よむ」・三田線の「カタカナを かく」に入っています）。書く練習は次の駅名を1字ずつ全部書けば到着、読む練習は駅名のカタカナを覚えてクイズのあと駅名を読めば到着で、駅スタンプをもらいます。コインは、その駅をその書き方（ぎん・きん）で初めてクリアしたときに1枚もらえます（同じ書き方でもう一度クリアしてももらえません。読む練習は駅ごとに1枚）。コイン5枚でガチャガチャが1回まわせます。</p>
     <p>コインを5枚集めると、ホームの「ガチャガチャ」で、まだ持っていない車両カードが1枚ランダムに出ます（全部そろったら、持っているカードに星がつきます）。金のコイン（「きん」で書けたとき・えほんでんしゃを初めてひとりで読めたときにもらえます）は、3枚でとくべつカード（むかしの でんしゃ を含む）と交換できます（第38版までは1枚でした）。コインはカプセルを開けたときに使うので、途中でアプリを閉じても減りません。</p>
-    <p>書く練習では、上の帯の「ぎん／きん」で書き方を切りかえられます（お手本をなぞる「ふつう」は第37版でやめました）。「ぎん」は駅名のお手本を見て覚えてから何もないマス目に、「きん」は声だけを聞いて書きます。切りかえた書き方は次の駅でも続き、まだ着いていない駅もこの書き方で到着できます（書いている途中で切りかえると、その駅の最初からになります）。書けたら銀・金のスタンプになり、飛ばしたスタンプのごほうび（カードに銀のスタンプ・金のコイン）もまとめてもらえます。2回うまくいかない字にはお手本が出て最後まで書けます。そのときはふつうのスタンプですが、初めての駅ならコインはもらえます。</p>
+    <p>書く練習では、上の帯の「ぎん／きん」で書き方を切りかえられます（お手本をなぞる「ふつう」は第37版でやめました）。「ぎん」は駅名のお手本を見て覚えてから何もないマス目に、「きん」は声だけを聞いて書きます。切りかえた書き方は次の駅でも続き、まだ着いていない駅もこの書き方で到着できます（書いている途中で切りかえると、その駅の最初からになります）。書けたら銀・金のスタンプになり、「きん」で書けたら金のコインももらえます（「ぎん」を飛ばしても大丈夫です）。2回うまくいかない字にはお手本が出て最後まで書けます。そのときはふつうのスタンプですが、初めての駅ならコインはもらえます。</p>
     <p>「ランダムえき」では、ひらがなを書く・カタカナを読む・カタカナを書くの 3 つから選び、目黒線・南北線・三田線のどれか、または「いろんな せん」（カードの電車が走る東急・都営・メトロ・相鉄・京急・JR・小田急・京王・東武・西武・京成・江ノ電などの約 1000 駅）の駅名を 5 つ練習します。「いろんな せん」では、コースの路線に出てこない字が入った駅を多めに出します。書くときは上の帯の書き方（ぎん／きん）で書きます。1 駅ごとに、その駅の路線を走る電車のカードを 1 枚もらえ、5 駅でゴールです（その路線のカードがそろっているときや、同じやり方でクリアしたことのある駅では、カードに星がつきます）。きんでは書き順と線の向きも見て、違うときは書き順を見せてからもう一度書きます。</p>
+    <p>カードはもらったときから、さわると裏返って、走るところ・行き先・まめちしきを見られます（第39版までは「ぎん」で書けた駅ごとにカードへ銀のスタンプを押し、そのカードだけ裏が見られました）。</p>
     <p>えほんでんしゃを 2 回目からひとりで読めたとき、つうかえきで終点まで読めたときは、カードに星が 1 つつきます。星が 5 つになるとカードがキラキラ光ります。</p>
     <p>駅名に出てこない字は「でんしゃことば」で練習します。言葉を1つ書くごとに車両が1両つながり、編成ができると出発してカードがもらえます。「ヂ」「ヅ」は言葉に入れていないので、じゆうれんしゅうで練習してください。</p>
     <p>うまく書けないときは、お手本を見せながら一緒にやり直し、3回目は必ず合格になります。×や点数は出しません。</p>
@@ -3086,7 +3040,7 @@ function openParent() {
     const b2 = sheet(`<h2>きろくを ぜんぶ けしますか？</h2><p style="text-align:center">はなまる・カード・すすんだ えきが すべて きえます。</p>
       <div class="row"><button class="btn" type="button" data-close>やめる</button><button class="btn red" type="button" id="doReset">けす</button></div>`);
     b2.querySelector('#doReset').addEventListener('click', () => {
-      st.hm = 0; st.w = {}; st.cards = []; st.cst = {}; st.star = {}; st.cfrom = {}; st.coin = 0; st.gcoin = 0; st.prog = {}; st.stamps = {}; st.clr = null; st.words = { h: 0, k: 0 }; replaceSt(st); save(); updateStats(); closeSheet(); openHome();
+      st.hm = 0; st.w = {}; st.cards = []; st.star = {}; st.cfrom = {}; st.coin = 0; st.gcoin = 0; st.prog = {}; st.stamps = {}; st.clr = null; st.words = { h: 0, k: 0 }; replaceSt(st); save(); updateStats(); closeSheet(); openHome();
     });
   });
 }
@@ -3203,14 +3157,13 @@ function stationRead(line, idx) {
 // level は かいた モード（2=みて かけた ぎん、3=きいて かけた きん）。とちゅうで おてほんが でたら（hinted）ふつうの スタンプ
 //   コインは はじめて クリアした 駅×レベル で 1まい（おなじ レベルで もういちど クリアしても もらえない）。
 //   第37版から かく れんしゅうは ぎん・きん だけ。とちゅうで おてほんが でても（hinted）ぎんの ぶんの コインは もらえる（スタンプは ふつう）
-//   スタンプが あがった ぶんの ごほうびも じゅんに わたす（とばした ぶんも：ぎんの スタンプを カードに おす → きんの コイン）
+//   きんの スタンプに あがったら きんの コインも わたす（第40版で、ぎんの スタンプを カードに おすのは やめた）
 function arrive(line, idx, level = 1, hinted = false) {
   dropWriter(); bgmStop(); hush();
-  const n = idx + 1, fresh = idx === st.prog[line.id], before = stampLevel(line, n), lv = hinted ? 1 : level, key = `${line.id}:${n}`;
+  const n = idx + 1, fresh = idx === st.prog[line.id], before = stampLevel(line, n), lv = hinted ? 1 : level;
   if (fresh) { st.prog[line.id] = n; save(); }
   setStamp(line, n, lv);
   const name = line.stations[n][1], last = n === line.stages.length;
-  const sc = lv >= 2 && before < 2 ? stampNextCard(key) : null;
   const gold = lv === 3 && before < 3;
   const cl = line.read ? lv : Math.max(2, lv);   // コインを きめる レベル
   const coin = !clearedAt(line, n, cl);
@@ -3221,7 +3174,6 @@ function arrive(line, idx, level = 1, hinted = false) {
   save();
   const gifts = [
     coin && (then => showCoinReward(false, last && fresh ? 'コース クリア！ コインを ゲット！' : fresh ? 'コインを ゲット！' : `${name}、${line.read ? '' : STAMP_LV[cl] + 'で '}はじめて クリア！`, then, gold ? 1 : 0)),
-    sc && (then => showStampCard(sc, `${name}の ぎんの スタンプを おしたよ！`, then)),
     gold && (then => showCoinReward(true, 'きんの スタンプの きんの コイン！', then))
   ].filter(Boolean);
   const up = lv > 1 && lv > before;
@@ -3255,25 +3207,17 @@ function showCardReward(c, title, then) {
     <div class="flip" id="flip" style="--lc:${cardColor(c)}"><div class="flip-in">
       <div class="flip-back" role="button" tabindex="0" aria-label="カードを めくる">？</div>
       <div class="flip-front">${cardHTML(c, { big: true })}</div></div></div>
-    <div class="row">${c.sp ? '<button class="btn big" type="button" id="cardBack" hidden>うらを みる</button>' : ''}<button class="btn big" type="button" id="cardOk">やったね！</button></div>`);
-  const flip = b.querySelector('#flip'), backBtn = b.querySelector('#cardBack');
+    <button class="btn big" type="button" id="cardOk">やったね！</button>`);
+  const flip = b.querySelector('#flip');
+  // めくれたら、さわると うらがえる カード（cardView）に おきかえる。うらは じぶんで さわって みる（じどうでは うらがえさない）
   const open = () => {
     if (flip.classList.contains('open')) return;
     flip.classList.add('open'); sfx.flip(); setTimeout(() => sfx.fanfare(), 350); setTimeout(() => speak(cardSay(c)), 1100);
-    if (backBtn) setTimeout(() => { backBtn.hidden = false; }, 1100);
+    setTimeout(() => { if (flip.isConnected) { flip.outerHTML = cardView(c); bindCardView(b, c); } }, 800);
   };
   flip.addEventListener('click', open);
   setTimeout(open, 900);
-  const done = () => { hush(); closeOverlay(); if (then) then(); };
-  b.querySelector('#cardOk').addEventListener('click', done);
-  // とくべつカードは もらった ときから うらが みられる
-  if (backBtn) backBtn.addEventListener('click', () => {
-    hush();
-    const b2 = overlay(`<p>${esc(title)}</p>${cardView(c)}<button class="btn big" type="button" id="cardOk">やったね！</button>`);
-    const turn = bindCardView(b2, c);
-    setTimeout(() => turn.auto(), 100);
-    b2.querySelector('#cardOk').addEventListener('click', done);
-  });
+  b.querySelector('#cardOk').addEventListener('click', () => { hush(); closeOverlay(); if (then) then(); });
 }
 
 /* ================= カードずかん ================= */
