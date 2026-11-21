@@ -3961,8 +3961,8 @@ function writeSession({ items, top, say, onDone, music = 'write', goalText, mode
       wr.clear(); setTimeout(() => wr.play(), 500);
       return;
     }
-    // かけた かず：しゃ・じゅ などは まとまり（it.u）で かぞえる（ちいさい ゃ だけでは かぞえない）
-    if (!r.forced) { const mark = st.w[it.c] || (st.w[it.c] = {}); if (curMode === 'free') mark.f = 1; else mark.t = 1; if (!(it.u && isSmallKana(it.c))) st.wc[it.c] = (st.wc[it.c] || 0) + 1; save(); }
+    // かけた かず：「じゅ」と かいたら「じゅ」「じ」「ゆ」で 1かいずつ（まとまりの ちいさい ゅ は おおきい ゆ に かぞえる。ユーザーの きめた こと）
+    if (!r.forced) { const mark = st.w[it.c] || (st.w[it.c] = {}); if (curMode === 'free') mark.f = 1; else mark.t = 1; const wk = it.u && isSmallKana(it.c) ? SMALL_OF[it.c] : it.c; st.wc[wk] = (st.wc[wk] || 0) + 1; save(); }
     if (it.u) {
       if (it.uf) uOk = uSolo = true;
       uOk = uOk && !r.forced; uSolo = uSolo && !r.forced && curMode === 'free';
