@@ -214,6 +214,9 @@ main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
 .masu .num{font:700 6.5px var(--font-ui);fill:var(--ink-soft)}
 .panel{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:14px}
 .model{display:grid;justify-items:center;gap:4px}
+.model-ch.two{width:auto;min-width:112px;padding:0 10px;font-size:3.4rem}
+.pairw{display:flex;gap:14px;width:100%;height:100%;align-items:center;justify-content:center}
+.pairw .ph{flex:1 1 0;min-width:0;height:100%;display:flex;align-items:center;justify-content:center}
 .model-ch{display:grid;place-items:center;width:112px;height:112px;background:var(--paper);border:3px solid var(--masu);border-radius:6px;font:600 4.8rem/1 var(--font-kana)}
 .strokes{margin:0;text-align:center;font-weight:700}
 .strokes b{font-size:1.6rem;color:var(--red);font-variant-numeric:tabular-nums}
@@ -539,7 +542,7 @@ main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
 
 /* 第46版：クイズの ちいさな ちず */
 .qtop{display:flex;align-items:center;justify-content:center;gap:16px;width:100%;flex-wrap:wrap}
-.qright{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;flex:1 1 380px}
+.qright{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;width:100%}
 .qmini{flex:none;width:min(330px,42vw);height:auto;aspect-ratio:3/2;border:3px solid var(--ink);border-radius:12px;background:var(--paper)}
 .qm-o polyline{fill:none;stroke:var(--ink-soft);opacity:.18;stroke-width:2px;vector-effect:non-scaling-stroke;stroke-linejoin:round}
 .qm-x polyline{fill:none;opacity:.45;stroke-width:3px;vector-effect:non-scaling-stroke;stroke-linejoin:round}
@@ -548,7 +551,25 @@ main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
 .qm-me{fill:var(--yellow);stroke:var(--ink);transform-box:fill-box;transform-origin:center;animation:qmpulse 1.2s ease-in-out infinite}
 @keyframes qmpulse{50%{transform:scale(1.35)}}
 .qm-lab text{fill:var(--ink);stroke:var(--paper);paint-order:stroke;font-family:var(--font-ui);font-weight:900}
-/* 第46版：ホームの 見出しと「つづきから」 */
+/* 第46版：ホームの 見出しと「つづきから」。スクロール しないで ぜんぶ みえる ように 4れつ */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:14px;align-items:start}
+@media (max-width:900px){.hgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.hgrid{grid-template-columns:minmax(0,1fr)}}
+.hgrid .hsec{margin-top:0}
+.hgrid .hsec h2{font-size:1.15rem;margin-bottom:8px}
+.hgrid .tools{grid-template-columns:minmax(0,1fr);gap:10px}
+.hgrid .tool{min-height:64px;padding:8px 12px;gap:10px;border-radius:16px;box-shadow:0 4px 0 var(--ink)}
+.hgrid .tool .ic{width:52px;height:52px;border-radius:12px;font-size:1.9rem}
+.hgrid .tool .emo-ic{font-size:1.8rem}
+.hgrid .tool .ic svg{max-width:46px;max-height:46px}
+.hgrid .tool b{font-size:1.12rem}
+.hgrid .tool small{font-size:.78rem;line-height:1.3}
+.hgrid .tool.ready{box-shadow:0 4px 0 var(--gold)}
+.hgrid + .foot{margin-top:10px}
+.resume{padding:8px 16px}
+.resume-t b{font-size:1.2rem}
+.resume-go{width:46px;height:46px}
 .hsec{margin-top:22px}
 .hsec h2{display:flex;align-items:center;gap:12px;margin:0 0 12px;font:900 1.3rem/1.2 var(--font-ui);color:var(--ink)}
 .hsec h2::after{content:"";flex:1;height:4px;border-radius:2px;background:var(--rule)}
@@ -625,9 +646,31 @@ button.qst{cursor:pointer}
 .ms2{cursor:pointer}
 .qminib{position:relative;flex:none;padding:0;border:0;background:none;cursor:pointer}
 .qmini-z{position:absolute;right:8px;bottom:8px;display:grid;place-items:center;width:40px;height:40px;border:2.5px solid var(--ink);border-radius:50%;background:var(--paper);font:1.2rem/1 var(--font-emoji)}
-.qrand{width:min(520px,100%);margin-bottom:6px}
+.qsel{display:grid;justify-items:center;gap:10px;text-align:center}
+.qopts{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px 22px}
+.pick.sm{gap:8px}
+.pick.sm button{min-height:52px;padding:4px 16px;font-size:1.1rem;border-bottom-width:6px}
+.qlv button{flex-direction:row;gap:8px;padding:4px 12px}
+.qlv b{font:900 1.3rem/1 var(--font-ui)}
+.qlv .qex{font-size:1.05rem}
+.qsel .grp-pick{margin:0}
+.grp-rand{background:var(--gold-bg)!important}
+.qnote{margin:0;color:var(--ink-soft);font-weight:700;font-size:.95rem}
+.qsel .qline{min-height:56px;padding-block:6px}
+.qsel{gap:8px}
+.qsel .qlines{gap:10px}
 .q4{gap:12px}
-.q4 .qminib .qmini{width:min(440px,92vw)}
+.ws-top.qws{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:16px}
+.ws-top.qws .qminiw{grid-row:1 / span 2}
+.ws-top.qws #wsTop,.ws-top.qws #wsGoal{grid-column:2}
+.qminiw{position:relative;border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--paper);width:min(340px,40vw)}
+.qminiw .mapsvg{height:230px}
+.qminiw .mapzoom{right:6px;top:6px;gap:4px}
+.qminiw .mapzoom .btn{min-width:40px;min-height:38px;padding:0 6px;font-size:1.05rem;box-shadow:0 2px 0 var(--ink)}
+.q4map{width:min(560px,94vw)}
+.q4map .mapsvg{height:min(300px,40vh)}
+.mo polyline.x{opacity:.5;stroke-width:3px}
+.mstop text .mk:empty + .mj:empty{display:none}
 .stack:has(.qbig){width:min(1000px,100%)}
 .qbig p{margin:0;color:var(--on-dark);font:700 1.05rem/1.4 var(--font-ui);text-align:center}
 .choices.q4c{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;width:100%;margin-top:4px;gap:14px}
@@ -2921,7 +2964,7 @@ const frontTrain = color => `<svg viewBox="0 0 60 60" aria-hidden="true"><rect x
 /* ================= がめん きりかえ ================= */
 let view = 'home', cur = { line: null, idx: 0 };
 let activeWriter = null;
-const dropWriter = () => { if (activeWriter) { activeWriter.destroy(); activeWriter = null; } };
+const dropWriter = () => { if (activeWriter) { if (activeWriter.partner) activeWriter.partner.destroy(); activeWriter.destroy(); activeWriter = null; } };
 function go(v, title, music) {
   view = v;
   if (v === 'home') reloadIfIdle();
@@ -3108,9 +3151,11 @@ function parentGate(onOk) {
 // せんの グループの きりかえ（ホーム・えきめいクイズ・ろせんず）
 // ながい せんの なまえは ちいさく（1ぎょうに おさまる ように）
 const nameFit = (t, big = 1.5) => { const n = [...t].length; return n > 11 ? ` style="font-size:${big * 0.72}rem"` : n > 8 ? ` style="font-size:${big * 0.84}rem"` : ''; };
-const groupTabs = id => `<div class="pick grp-pick" id="${id}">${LGROUPS.map(([k, l]) => `<button type="button" data-g="${k}" aria-pressed="${k === st.lgrp}">${l}</button>`).join('')}</div>`;
+// extra：うしろに ならべる ボタン（えきめいクイズの「ランダム」）
+const groupTabs = (id, extra = '') => `<div class="pick grp-pick" id="${id}">${LGROUPS.map(([k, l]) => `<button type="button" data-g="${k}" aria-pressed="${k === st.lgrp}">${l}</button>`).join('')}${extra}</div>`;
+const RAND_TAB = '<button type="button" class="grp-rand" data-l="rand">🎲 ランダム</button>';
 function bindGroupTabs(v, id, redraw) {
-  v.querySelectorAll(`#${id} button`).forEach(b => b.addEventListener('click', () => {
+  v.querySelectorAll(`#${id} button[data-g]`).forEach(b => b.addEventListener('click', () => {
     const g = LGROUPS.find(x => x[0] === b.dataset.g);
     if (st.lgrp !== g[0]) { st.lgrp = g[0]; save(); redraw(); }
     speak(g[1]);
@@ -3131,28 +3176,29 @@ function openHome() {
     return `<button class="resume" type="button" id="toLast" style="--lc:${last.color}"><span class="sym" style="--lc:${last.color}">${last.sym}</span>
       <span class="resume-t"><small>つづきから</small><b>${esc(last.kana)}　${TASKS[last.task].label}</b><small>${p >= n ? 'ゴール！' : `つぎは ${last.stations[p + 1][1]}`}　${p} / ${n}</small></span><span class="resume-go" aria-hidden="true">▶</span></button>`;
   })() : '';
-  v.innerHTML = `<p class="hello">なにを れんしゅうする？</p>
+  // スクロール しないで ぜんぶ みえる ように、見出しを よこに 4れつ（たての iPad は 2れつ）
+  v.innerHTML = `<h2 class="sr-only">なにを れんしゅうする？</h2>
     ${resume}
-    <section class="hsec"><h2>かく</h2><div class="tools">
-      ${tool('toHw', 'あ', 'ひらがなを かく', `えきの なまえを かいて すすもう　とうちゃく ${arrived('hw')}えき`)}
-      ${tool('toKw', 'ア', 'カタカナを かく', `えきの なまえを カタカナで かこう　とうちゃく ${arrived('kw')}えき`)}
-      ${tool('toQuiz', '❓', 'えきめいクイズ', `むしくいの えきの なまえを かいて あてよう。ランダムも　ゴール ${st.quiz.n}かい`)}
-      ${tool('toWords', carSVG('var(--mg)', true, true).replace('<svg', '<svg width="64"'), 'でんしゃことば', `ことばを かいて でんしゃを つなごう　ひらがな ${st.words.h} / ${TWORDS.h.length}・カタカナ ${st.words.k} / ${TWORDS.k.length}`)}
-      ${tool('toFree', 'あ', 'じゆうれんしゅう', 'あいうえおの ひょうから もじを えらんで、その もじが でてくる でんしゃの ことばも かこう')}
+    <div class="hgrid"><section class="hsec"><h2>かく</h2><div class="tools">
+      ${tool('toHw', 'あ', 'ひらがなを かく', `えきの なまえを かいて すすむ　とうちゃく ${arrived('hw')}えき`)}
+      ${tool('toKw', 'ア', 'カタカナを かく', `カタカナで かいて すすむ　とうちゃく ${arrived('kw')}えき`)}
+      ${tool('toQuiz', '❓', 'えきめいクイズ', `むしくいの えきめいを かく　ゴール ${st.quiz.n}かい`)}
+      ${tool('toWords', carSVG('var(--mg)', true, true).replace('<svg', '<svg width="64"'), 'でんしゃことば', `ひらがな ${st.words.h}/${TWORDS.h.length}・カタカナ ${st.words.k}/${TWORDS.k.length}`)}
+      ${tool('toFree', 'あ', 'じゆうれんしゅう', 'すきな もじと でんしゃの ことば')}
     </div></section>
     <section class="hsec"><h2>よむ</h2><div class="tools">
-      ${tool('toBook', '📖', 'えほんでんしゃ', `でんしゃの おはなしを よもう　ひとりで よめた ${STORIES.filter(s => ((st.read[s.id] || {}).s || 0) > 0).length} / ${STORIES.length}`)}
-      ${tool('toPass', '🚉', 'つうかえき', `えきの なまえを ひとめで よもう　いまは ${PASS_TYPES[passType(st.pass.T || 2000)].name}`)}
+      ${tool('toBook', '📖', 'えほんでんしゃ', `ひとりで よめた ${STORIES.filter(s => ((st.read[s.id] || {}).s || 0) > 0).length} / ${STORIES.length}`)}
+      ${tool('toPass', '🚉', 'つうかえき', `いまは ${PASS_TYPES[passType(st.pass.T || 2000)].name}`)}
     </div></section>
     <section class="hsec"><h2>まなぶ</h2><div class="tools">
-      ${tool('toQ4', '🗾', '4たく えきめいクイズ', `ちずの えきは どれ？ 4つから えらぼう　ゴール ${st.q4.n}かい`)}
+      ${tool('toQ4', '🗾', '4たく えきめいクイズ', `ちずの えきは どれ？　ゴール ${st.q4.n}かい`)}
     </div></section>
     <section class="hsec"><h2>あつめる・みる</h2><div class="tools">
       ${tool('toGacha', gachaSVG(false), `ガチャガチャ${canSpin ? '<span class="ready-tag">まわせる！</span>' : ''}`, `${coinSVG(false)} コイン ${st.coin}まい${st.gcoin ? `<br>${coinSVG(true)} きんの コイン ${st.gcoin}まい` : `<br>コイン ${GACHA_COST}まいで でんしゃカード`}`, canSpin ? ' ready' : '')}
       ${tool('toZukan', trainSVG(CARDMAP.c01).replace('<svg', '<svg width="64"'), 'カードずかん', `あつめた カード ${st.cards.length} / ${CARDS.length}${st.sp.length ? `・とくべつ ${st.sp.length}` : ''}`)}
-      ${tool('toMap', '🗺️', 'ろせんず', 'いろんな せんと えきを みよう')}
+      ${tool('toMap', '🗺️', 'ろせんず', 'いろんな せんと えき')}
     </div></section>
-    <div class="foot"><button class="linkbtn" type="button" id="toParent">おうちの かたへ</button></div>`;
+    </div><div class="foot"><button class="linkbtn" type="button" id="toParent">おうちの かたへ</button></div>`;
   if (last) $('#toLast').addEventListener('click', () => openLine(last.id));
   [['toHw', 'hw'], ['toKw', 'kw']].forEach(([id, t]) => $('#' + id).addEventListener('click', () => openCourses(t)));
   $('#toGacha').addEventListener('click', openGacha);
@@ -3970,13 +4016,13 @@ function startStage(line, idx) {
 }
 // ことばを 1もじずつ かく ときの うえの ひょうじ（かかない もじは さいしょから はいっている）
 //   show=true のときは、これから かく もじも みせる（チャレンジの「みて かく」）
-function wordPills(word, blanks, i, show) {
-  const done = new Set(blanks.slice(0, i)), now = blanks[i];
+function wordPills(word, blanks, i, show, span = 1) {
+  const done = new Set(blanks.slice(0, i)), now = new Set(blanks.slice(i, i + span));
   return `<div class="pills">${[...word].map((c, k) => {
     if (c === ' ') return '<span class="pill given small"></span>';
     if (!blanks.includes(k)) return `<span class="pill given${STROKES[c] && !isSmallKana(c) ? '' : ' small'}">${c}</span>`;
     if (done.has(k)) return `<span class="pill ok">${c}</span>`;
-    return `<span class="pill${k === now ? ' now' : ''}">${show ? c : ''}</span>`;
+    return `<span class="pill${now.has(k) ? ' now' : ''}">${show ? c : ''}</span>`;
   }).join('')}</div>`;
 }
 
@@ -3987,6 +4033,7 @@ function wordPills(word, blanks, i, show) {
 //   order=true は かきじゅんと むきも みる（きん）。ちがったら かきじゅんを みせて もういちど
 //   quiet=true は もじを だした ときに よみあげない（えきめいクイズ。こたえが わかって しまう）。sayLabel は「きく」ボタンの なまえ
 //   onDone(hinted, solo)：solo は おてほん なしで かけた もじの かず
+//   第46版：しゃ・じゅ などの まとまり（items の u・uf・ul）は 2つの マスを ならべて、1がめんで いっしょに かく。top(i, かず) の かずは いま かく もじの かず
 function writeSession({ items, top, say, onDone, music = 'write', goalText, mode = 'trace', hideModel = false, peek = false, order = false, quiet = false, sayLabel = 'きく' }) {
   const v = $('#v-stage');
   v.classList.add('fill');
@@ -4003,64 +4050,104 @@ function writeSession({ items, top, say, onDone, music = 'write', goalText, mode
         <p class="msg" id="kMsg" aria-live="polite"></p>
       </div></div></div>`;
   dropWriter();
-  const wr = activeWriter = makeWriter(v.querySelector('#area'));
-  let i = 0, fails = 0, hinted = false, curMode = mode, solo = 0, uOk = true, uSolo = true;
+  const area = v.querySelector('#area');
+  let ws = [], wr = null, lastW = null, step = [0];
+  let i = 0, fails = 0, hinted = false, curMode = mode, solo = 0;
   preloadVoice(items.map((_, k) => say(k)));
   const setMsg = m => { v.querySelector('#kMsg').textContent = m; };
   const playBtn = v.querySelector('#kPlay');
-  wr.onInk = () => setMsg('');
-  wr.onPeekEnd = () => { if (curMode === 'free') setMsg('なにも ない マスに かいてみよう'); };
+  // いま かく もじ：まとまりの はじめと おわりが ならんで いれば 2つ いっしょ
+  const stepOf = k => { const a = items[k], b = items[k + 1]; return a.u && a.uf && b && b.u === a.u && b.ul ? [k, k + 1] : [k]; };
+  function build() {
+    ws.forEach(w => w.destroy());
+    if (step.length > 1) {
+      area.innerHTML = `<div class="pairw">${step.map(() => '<div class="ph"></div>').join('')}</div>`;
+      ws = [...area.querySelectorAll('.ph')].map(h => makeWriter(h));
+    } else ws = [makeWriter(area)];
+    wr = activeWriter = ws[0]; wr.partner = ws[1] || null; lastW = null;
+    ws.forEach(w => {
+      w.onInk = () => { lastW = w; setMsg(''); };
+      w.onPeekEnd = () => { if (curMode === 'free' && !ws.some(x => x.busy)) setMsg('なにも ない マスに かいてみよう'); };
+    });
+  }
+  // おてほん：ひだりの マスから じゅんばんに
+  function playAll(list = ws) {
+    if (!list.length) return;
+    const ms = list[0].play();
+    if (list[1]) setTimeout(() => { if (ws.includes(list[1])) list[1].play(); }, Math.max(0, ms - 1200));
+  }
+  function peekAll() {
+    if (ws.length === 1) { wr.peek(); return; }
+    ws.forEach(w => { w.busy = true; });
+    const ms = ws[0].play(), w1 = ws[1];
+    setTimeout(() => {
+      if (!ws.includes(w1)) return;
+      const ms2 = w1.play();
+      setTimeout(() => { if (!ws.includes(w1)) return; ws.forEach(w => { w.busy = false; }); ws[0].onPeekEnd(); }, ms2);
+    }, Math.max(0, ms - 1200));
+  }
   function setMode(m) {
     curMode = m;
-    wr.set(items[i].c, m);
+    step.forEach((k, j) => ws[j].set(items[k].c, m));
     playBtn.hidden = m === 'free';
-    v.querySelector('#modelCh').textContent = hideModel && m === 'free' ? '？' : items[i].c;
+    const mc = v.querySelector('#modelCh');
+    mc.textContent = hideModel && m === 'free' ? '？'.repeat(step.length) : step.map(k => items[k].c).join('');
+    mc.classList.toggle('two', step.length > 1);
   }
   function show() {
-    const it = items[i];
+    step = stepOf(i);
+    build();
     fails = 0;
-    v.querySelector('#wsTop').innerHTML = top(i);
+    v.querySelector('#wsTop').innerHTML = top(i, step.length);
     v.querySelector('#wsGoal').innerHTML = goalText ? goalText(i) : '';
-    v.querySelector('#kStrokes').textContent = STROKES[it.c].s.length;
+    v.querySelector('#kStrokes').textContent = step.map(k => STROKES[items[k].c].s.length).join('・');
     setMsg('');
     setMode(mode);
-    const k = i;
-    if (peek) { wr.busy = true; setMsg('おてほんを よく みてね'); }
-    setTimeout(() => { if (i === k && activeWriter === wr) { if (!quiet) speak(say(k)); if (curMode === 'trace') wr.play(); else if (peek) wr.peek(); } }, 350);
+    const k = i, w0 = wr;
+    if (peek) { ws.forEach(w => { w.busy = true; }); setMsg('おてほんを よく みてね'); }
+    setTimeout(() => { if (i === k && activeWriter === w0) { if (!quiet) speak(say(k)); if (curMode === 'trace') playAll(); else if (peek) peekAll(); } }, 350);
   }
-  playBtn.addEventListener('click', () => wr.play());
+  playBtn.addEventListener('click', () => playAll());
   v.querySelector('#kSay').addEventListener('click', () => { if (i < items.length) speak(say(i)); });
-  v.querySelector('#kUndo').addEventListener('click', () => { wr.undo(); setMsg(''); });
-  v.querySelector('#kClear').addEventListener('click', () => { wr.clear(); setMsg(''); });
+  v.querySelector('#kUndo').addEventListener('click', () => { (lastW || wr).undo(); setMsg(''); });
+  v.querySelector('#kClear').addEventListener('click', () => { ws.forEach(w => w.clear()); setMsg(''); });
   v.querySelector('#kDone').addEventListener('click', () => {
-    const r = checkWriting(wr, fails), it = items[i];
-    if (r.empty) { const m = curMode === 'free' ? 'マスの なかに かいてみよう' : 'うすい もじを なぞってね'; setMsg(m); speak(m); return; }
-    const badOrder = r.pass && order && curMode === 'free' && !wr.orderOK();
-    if (!r.pass || badOrder) {
+    const rs = ws.map(w => checkWriting(w, fails));
+    if (rs.some(r => r.empty)) { const m = ws.length > 1 ? 'ふたつの マスに かいてみよう' : curMode === 'free' ? 'マスの なかに かいてみよう' : 'うすい もじを なぞってね'; setMsg(m); speak(m); return; }
+    const pass = rs.every(r => r.pass), orderNG = w => order && curMode === 'free' && !w.orderOK();
+    const badOrder = pass && ws.some(orderNG);
+    if (!pass || badOrder) {
       sfx.soft();
+      const bad = ws.filter((w, j) => !rs[j].pass || orderNG(w));
       if (curMode === 'free') {
         // チャレンジ：1かいめは もういちど（かきじゅんが ちがう ときは かきじゅんを みせてから）、2かいめは その もじだけ おてほんを だす
-        if (fails === 0 && badOrder) { fails = 1; const m = 'かきじゅんを みてみよう'; setMsg(m); speak(m); wr.clear(); wr.peek(); return; }
-        if (fails === 0) { fails = 1; const m = 'もういちど かいてみよう'; setMsg(m); speak(m); wr.clear(); return; }
+        if (fails === 0 && badOrder) { fails = 1; const m = 'かきじゅんを みてみよう'; setMsg(m); speak(m); bad.forEach(w => { w.clear(); w.peek(); }); return; }
+        if (fails === 0) { fails = 1; const m = 'もういちど かいてみよう'; setMsg(m); speak(m); bad.forEach(w => w.clear()); return; }
         hinted = true; fails = 0;
         const m = 'おてほんを だすね。なぞって みよう';
-        setMode('trace'); setMsg(m); speak(m); setTimeout(() => wr.play(), 500);
+        setMode('trace'); setMsg(m); speak(m); setTimeout(() => playAll(), 500);
         return;
       }
       const m = HELP_MSG[Math.min(fails, 1)];
       fails++; setMsg(m); speak(m);
-      wr.clear(); setTimeout(() => wr.play(), 500);
+      bad.forEach(w => w.clear()); setTimeout(() => playAll(bad), 500);
       return;
     }
     // かけた かず：「じゅ」と かいたら「じゅ」「じ」「ゆ」で 1かいずつ（まとまりの ちいさい ゅ は おおきい ゆ に かぞえる。ユーザーの きめた こと）
-    if (!r.forced) { const mark = st.w[it.c] || (st.w[it.c] = {}); if (curMode === 'free') mark.f = 1; else mark.t = 1; const wk = it.u && isSmallKana(it.c) ? SMALL_OF[it.c] : it.c; st.wc[wk] = (st.wc[wk] || 0) + 1; save(); }
-    if (it.u) {
-      if (it.uf) uOk = uSolo = true;
-      uOk = uOk && !r.forced; uSolo = uSolo && !r.forced && curMode === 'free';
-      if (it.ul) { if (uOk) { st.wc[it.u] = (st.wc[it.u] || 0) + 1; save(); } if (uSolo) solo++; }
-    } else if (!r.forced && curMode === 'free') solo++;
+    const forced = rs.some(r => r.forced);
+    step.forEach((k, j) => {
+      const it = items[k];
+      if (rs[j].forced) return;
+      const mark = st.w[it.c] || (st.w[it.c] = {}); if (curMode === 'free') mark.f = 1; else mark.t = 1;
+      const wk = it.u && isSmallKana(it.c) ? SMALL_OF[it.c] : it.c; st.wc[wk] = (st.wc[wk] || 0) + 1;
+    });
+    const u = step.length > 1 ? items[step[0]].u : '';
+    if (u && !forced) st.wc[u] = (st.wc[u] || 0) + 1;
+    if (!forced && curMode === 'free') solo++;   // まとまりは 2もじで 1つ
+    save();
+    const r = { pass: true, forced, perfect: rs.every(x => x.perfect), need: (rs.find(x => !x.perfect) || rs[0]).need };
     praiseFor(r, () => {
-      i++;
+      i += step.length;
       if (i < items.length) show();
       else { dropWriter(); onDone(hinted, solo); }
     }, curMode === 'free');
@@ -4157,21 +4244,19 @@ function openQuiz() {
       <span class="qline-t"><b ${nameFit(l.kana, 1.15)}>${esc(l.kana)}</b>${l.kanji !== l.kana ? `<small>${esc(l.kanji)}</small>` : ''}
       <span class="qbadge" aria-label="ゴールした レベル">${[1, 2, 3].map(k => `<i class="${r[k] ? 'on' : ''}">${k}</i>`).join('')}</span></span></button>`;
   };
-  v.innerHTML = `<div class="intro">
-    <p class="ask">なにを かく？</p>
-    <div class="pick" id="qS">${Object.entries(QUIZ_SCRIPT).map(([k, l]) => `<button type="button" data-s="${k}" aria-pressed="${k === Q.s}">${l}</button>`).join('')}</div>
-    <p class="ask">レベル</p>
-    <div class="pick qlv" id="qL">${QUIZ_LV.map((o, k) => `<button type="button" data-v="${k + 1}" aria-pressed="${k + 1 === Q.lv}"><b>レベル${k + 1}</b>${quizExample(k + 1, Q.s)}<small>${o.label}</small></button>`).join('')}</div>
-    <p class="ask">どの せんで クイズする？</p>
-    <button class="qline qrand" type="button" data-l="rand"><span class="ic emo-ic" aria-hidden="true">🎲</span><span class="qline-t"><b>ランダム</b><small>いろんな せんの えきから 5えき</small>${badge(Q.rec[`rand:${Q.s}`])}</span></button>
-    ${groupTabs('quizGrp')}
+  const randDone = [1, 2, 3].filter(k => (Q.rec[`rand:${Q.s}`] || [])[k]);   // ランダムで ゴールした レベル
+  // 第46版：スクロール しないで えらべる ように、もじ・レベルを 1ぎょうに、「ランダム」は 会社の きりかえの うしろ
+  v.innerHTML = `<div class="qsel">
+    <div class="qopts"><div class="pick sm" id="qS">${Object.entries(QUIZ_SCRIPT).map(([k, l]) => `<button type="button" data-s="${k}" aria-pressed="${k === Q.s}">${l}</button>`).join('')}</div>
+      <div class="pick sm qlv" id="qL">${QUIZ_LV.map((o, k) => `<button type="button" data-v="${k + 1}" aria-pressed="${k + 1 === Q.lv}" aria-label="レベル${k + 1} ${o.label}"><b>${k + 1}</b>${quizExample(k + 1, Q.s)}</button>`).join('')}</div></div>
+    ${groupTabs('quizGrp', RAND_TAB)}
     <div class="qlines">${linesOf(st.lgrp).map(lineBtn).join('')}</div>
-    <p>5えき あてたら ゴール。じぶんで もじを ${QUIZ_COIN}こ かくと コイン 1まい（いま ${Q.cnt} / ${QUIZ_COIN}）　ゴール ${Q.n}かい</p></div>`;
+    <p class="qnote">5えき あてたら ゴール。じぶんで もじを ${QUIZ_COIN}こ かくと コイン 1まい（いま ${Q.cnt} / ${QUIZ_COIN}）　ゴール ${Q.n}かい${randDone.length ? `　ランダム レベル${randDone.join("・")}` : ""}</p></div>`;
   const redraw = () => { const y = $('#main').scrollTop; openQuiz(); $('#main').scrollTop = y; };
   v.querySelectorAll('#qS button').forEach(b => b.addEventListener('click', () => { if (Q.s !== b.dataset.s) { Q.s = b.dataset.s; save(); redraw(); } speak(QUIZ_SCRIPT[Q.s]); }));
   v.querySelectorAll('#qL button').forEach(b => b.addEventListener('click', () => { if (Q.lv !== +b.dataset.v) { Q.lv = +b.dataset.v; save(); redraw(); } speak(QUIZ_LV[Q.lv - 1].say); }));
   bindGroupTabs(v, 'quizGrp', redraw);
-  v.querySelectorAll('.qline').forEach(b => b.addEventListener('click', () => {
+  v.querySelectorAll('.qline, .grp-rand').forEach(b => b.addEventListener('click', () => {
     const line = LINEMAP[b.dataset.l] || null;   // ランダムは null
     quiz = { line, s: Q.s, lv: Q.lv, list: quizPick(line, Q.s, Q.lv), i: 0 };
     if (quiz.list.length) quizStation();
@@ -4187,8 +4272,7 @@ function quizMap(it) {
   const nb = o => o ? `<button type="button" class="qst" data-say="${esc(o[1])}"><b>${quizName(o[1], s)}</b><small>${esc(o[0])}</small></button>` : '<span class="qst none"></span>';
   return `<div class="qmap${prev ? '' : ' first'}${next ? '' : ' last'}" style="--lc:${line.color}">${nb(prev)}<span class="qst me"><b>？</b><small>この えき</small></span>${nb(next)}</div>`;
 }
-// 第46版：クイズの ちいさな ちず（ろせんずと おなじ 本当の いち）。その 路線の はしから はしまで、あてる 駅は きいろの おおきな まる。
-//   名前は まえ・うしろ・りょうはしの 駅だけ（あてる 駅は ださない）。まじわる 路線（おなじ 名前の 駅が 1.7km より ちかい）は その いろで うすく、ほかは グレー
+// まじわる 路線（おなじ 名前の 駅が 1.7km より ちかい）。ちずで その いろで うすく ひく
 let XFER = null;
 function crossLines(lid) {
   if (!XFER) {
@@ -4201,37 +4285,33 @@ function crossLines(lid) {
   }
   return XFER[lid] || new Set();
 }
-function quizMini(it, s = quiz.s) {
-  const line = it.line, pts = MAP_XY[line.id], W = 330, H = 220, box = mapBox(line.id);
-  const w = Math.max(box.w, box.h * W / H), h = w * H / W, u = w / W, cross = crossLines(line.id);
-  const poly = id => mapPoly(id);
-  const last = pts.length - 1, wrap = i => line.loop ? (i + pts.length) % pts.length : i, pi = wrap(it.i - 1), ni = wrap(it.i + 1);
-  // 名前は まえ・うしろと りょうはし（わの 路線は はしが ないので まえ・うしろ だけ）
-  const named = [...new Set(line.loop ? [pi, ni] : [0, pi, ni, last])].filter(i => i >= 0 && i <= last && i !== it.i);
-  // まえの 駅は ひだりがわ、ほかは みぎがわに 名前（ならんで かさならない ように）
-  const label = i => { const [x, y] = pts[i], left = i === pi && (line.loop || i !== 0); return `<text x="${x + (left ? -8 : 8) * u}" y="${y + 5 * u}" text-anchor="${left ? 'end' : 'start'}" font-size="${14 * u}" stroke-width="${4 * u}">${quizName(line.stations[i][1], s)}</text>`; };
-  return `<svg class="qmini" viewBox="${box.cx - w / 2} ${box.cy - h / 2} ${w} ${h}" aria-hidden="true">
-    <g class="qm-o">${ALL_LINES.filter(l => l.id !== line.id && !cross.has(l.id)).map(l => `<polyline points="${poly(l.id)}"/>`).join('')}</g>
-    <g class="qm-x">${ALL_LINES.filter(l => cross.has(l.id)).map(l => `<polyline points="${poly(l.id)}" style="stroke:${l.color}"/>`).join('')}</g>
-    <polyline class="qm-sel" points="${poly(line.id)}" style="stroke:${line.color}"/>
-    ${pts.map(([x, y], i) => i === it.i ? '' : `<circle class="qm-st" cx="${x}" cy="${y}" r="${3.5 * u}" stroke-width="${1.8 * u}"/>`).join('')}
-    <circle class="qm-me" cx="${pts[it.i][0]}" cy="${pts[it.i][1]}" r="${10 * u}" stroke-width="${3 * u}"/>
-    <g class="qm-lab">${named.map(label).join('')}</g></svg>`;
+// クイズの ちいさな ちず（ゆびで うごかす・2ほんの ゆびで おおきく できる）。あてる 駅の まわりを おおきく した ところから はじめる。
+//   名前は まえ・うしろ・りょうはしの 駅（わの 路線は まえ・うしろ だけ）。あてる 駅は「？」
+function quizMiniMap(box, it, s) {
+  const line = it.line, n = line.stations.length, wrap = i => line.loop ? (i + n) % n : i;
+  const named = [...new Set(line.loop ? [wrap(it.i - 1), wrap(it.i + 1)] : [0, it.i - 1, it.i + 1, n - 1])].filter(i => i >= 0 && i < n);
+  return mapWidget(box, { lid: line.id, script: s, hide: it.kanji, target: it.i, start: it.i, named, small: true,
+    onStop: i => { if (i === it.i) speak('この えきは なにかな'); else if (named.includes(i)) speak(line.stations[i][1]); } });
 }
 function quizStation() {
   cur.mode = 'quiz';
   const { s, lv, list, i } = quiz, it = list[i], line = it.line, name = quizName(it.kana, s), chars = [...name];
-  const us = quizBlankUnits(name, s, lv), blanks = us.flat(), items = unitItems(chars, us), mini = quizMini(it);
+  const us = quizBlankUnits(name, s, lv), blanks = us.flat(), items = unitItems(chars, us);
   go('stage', `えきめいクイズ　${quiz.line ? line.kana : `ランダム　${line.kana}`}`, null);
   writeSession({
     items, mode: 'free', hideModel: true, quiet: true, sayLabel: 'えきの なまえ',
-    top: k => `<div class="qtop"><button type="button" class="qminib" aria-label="ちずを おおきく">${mini}<span class="qmini-z" aria-hidden="true">🔍</span></button><div class="qright"><div class="st-band" style="--lc:${line.color}"><span class="sym" style="--lc:${line.color}">${line.sym}</span>${quizDots()}<b style="font:900 1.15rem var(--font-ui)">この えきは なにかな？</b></div>
-      ${quizMap(it)}${wordPills(name, blanks, k)}<p class="qkanji">${esc(it.kanji)}</p></div></div>`,
+    top: (k, n) => `<div class="qright"><div class="st-band" style="--lc:${line.color}"><span class="sym" style="--lc:${line.color}">${line.sym}</span>${quizDots()}<b style="font:900 1.15rem var(--font-ui)">この えきは なにかな？</b></div>
+      ${quizMap(it)}${wordPills(name, blanks, k, false, n)}<p class="qkanji">${esc(it.kanji)}</p></div>`,
     goalText: k => `あと <b>${items.length - k}</b>もじ`,
     say: () => it.kana,
     onDone: (hinted, solo) => quizNext(solo)
   });
-  $('#wsTop').addEventListener('click', e => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); else if (e.target.closest('.qminib')) quizBigMap(); });
+  $('#wsTop').addEventListener('click', e => { const b = e.target.closest('[data-say]'); if (b) speak(b.dataset.say); });
+  // ちいさな ちず：かく がめんの うえの ひだりに 1かいだけ つくる（1もじ かいても ズームが そのまま）
+  const wtop = $('#v-stage .ws-top');
+  wtop.classList.add('qws');
+  wtop.insertAdjacentHTML('afterbegin', `<div class="qminiw" style="--lc:${line.color}"><div class="mapholder" id="qMini"></div>${mapZoomBtns(line.sym)}</div>`);
+  bindZoom(wtop, quizMiniMap($('#qMini'), it, s));
   setTimeout(() => {
     if (view !== 'stage' || cur.mode !== 'quiz' || quiz.i !== i) return;
     if (i) speak('この えきは なにかな');
@@ -4280,7 +4360,7 @@ function quizGoal() {
 /* ================= 4たく えきめいクイズ（第46版。ホームの「まなぶ」） ================= */
 // ちいさな ちずで ひかって いる 駅の 名前を 4つから えらぶ（よむ れんしゅう・路線の ならびを おぼえる）。
 //   ちずには まえ・うしろ・りょうはしの 駅の 名前が でる。ちがう えらびしは おなじ 路線の べつの 駅（まえ・うしろ いがい。たりなければ ほかの 路線から）。
-//   まちがえたら その えらびしを うすく して、こたえを ひからせる（×は ださない）。5えきで ゴール、ゴールで コイン 1まい
+//   まちがえたら その えらびしだけ うすく する（×・こたえの ひかりは ださない。のこりから えらびなおす）。5えきで ゴール、ゴールで コイン 1まい
 const Q4_SAY = ['4たく えきめいクイズ', 'ちずの ひかって いる えきは どれ？', 'ゴール！ コインを ゲット！'];
 const Q4_SCRIPT = { h: 'ひらがなで よむ', k: 'カタカナで よむ' };
 let q4 = null;
@@ -4298,18 +4378,15 @@ function openQuiz4() {
   const goals = id => Q.rec[`${id}:${Q.s}`] || 0;
   const lineBtn = l => `<button class="qline" type="button" data-l="${l.id}" style="--lc:${l.color}"><span class="sym" style="--lc:${l.color}">${l.sym}</span>
     <span class="qline-t"><b ${nameFit(l.kana, 1.15)}>${esc(l.kana)}</b>${l.kanji !== l.kana ? `<small>${esc(l.kanji)}</small>` : ''}<small>ゴール ${goals(l.id)}かい</small></span></button>`;
-  v.innerHTML = `<div class="intro">
-    <p class="ask">なにで よむ？</p>
-    <div class="pick" id="q4S">${Object.entries(Q4_SCRIPT).map(([k, l]) => `<button type="button" data-s="${k}" aria-pressed="${k === Q.s}">${l}</button>`).join('')}</div>
-    <p class="ask">どの せんで クイズする？</p>
-    <button class="qline qrand" type="button" data-l="rand"><span class="ic emo-ic" aria-hidden="true">🎲</span><span class="qline-t"><b>ランダム</b><small>いろんな せんの えきから 5えき　ゴール ${goals('rand')}かい</small></span></button>
-    ${groupTabs('q4Grp')}
+  v.innerHTML = `<div class="qsel">
+    <div class="qopts"><div class="pick sm" id="q4S">${Object.entries(Q4_SCRIPT).map(([k, l]) => `<button type="button" data-s="${k}" aria-pressed="${k === Q.s}">${l}</button>`).join('')}</div></div>
+    ${groupTabs('q4Grp', RAND_TAB)}
     <div class="qlines">${linesOf(st.lgrp).map(lineBtn).join('')}</div>
-    <p>ちずで ひかって いる えきの なまえを 4つから えらぼう。5えきで ゴール、ゴールで コイン 1まい　ゴール ${Q.n}かい</p></div>`;
+    <p class="qnote">ちずで ひかって いる えきの なまえを 4つから えらぼう。5えきで ゴール、ゴールで コイン 1まい　ゴール ${Q.n}かい（ランダム ${goals('rand')}かい）</p></div>`;
   const redraw = () => { const y = $('#main').scrollTop; openQuiz4(); $('#main').scrollTop = y; };
   v.querySelectorAll('#q4S button').forEach(b => b.addEventListener('click', () => { if (Q.s !== b.dataset.s) { Q.s = b.dataset.s; save(); redraw(); } speak(Q4_SCRIPT[Q.s]); }));
   bindGroupTabs(v, 'q4Grp', redraw);
-  v.querySelectorAll('.qline').forEach(b => b.addEventListener('click', () => {
+  v.querySelectorAll('.qline, .grp-rand').forEach(b => b.addEventListener('click', () => {
     const line = LINEMAP[b.dataset.l] || null;
     q4 = { line, s: Q.s, list: q4Pick(line, Q.s), i: 0 };
     if (q4.list.length) q4Station();
@@ -4331,10 +4408,10 @@ function q4Station() {
   v.innerHTML = `<div class="intro q4">
     <div class="st-band" style="--lc:${line.color}"><span class="sym" style="--lc:${line.color}">${line.sym}</span>${q4Dots()}<b style="font:900 1.15rem var(--font-ui)">${esc(line.kana)}</b></div>
     <p class="ask">ちずの ひかって いる えきは どれ？</p>
-    <button type="button" class="qminib q4map" aria-label="ちずを おおきく">${quizMini(it, s)}<span class="qmini-z" aria-hidden="true">🔍</span></button>
+    <div class="qminiw q4map" style="--lc:${line.color}"><div class="mapholder" id="q4Mini"></div>${mapZoomBtns(line.sym)}</div>
     <div class="choices q4c" id="q4C"></div></div>`;
-  v.querySelector('.q4map').addEventListener('click', () => quizBigMap(it, s));
-  let miss = false, lock = false;
+  bindZoom(v.querySelector('.q4map'), quizMiniMap(v.querySelector('#q4Mini'), it, s));
+  let lock = false;
   const box = v.querySelector('#q4C');
   opts.forEach(y => {
     const b = document.createElement('button');
@@ -4346,8 +4423,8 @@ function q4Station() {
         st.q4.ok[`${s}:${line.id}:${it.kana}`] = 1; save();
         setTimeout(() => { if (view === 'stage' && cur.mode === 'q4') q4Next(); }, 1500);
       } else {
+        // まちがえた ときは えらんだ ものだけ うすく する（こたえは ひからせない。のこりから えらびなおす。ユーザーの きめた こと）
         b.classList.add('dim'); b.disabled = true; sfx.soft();
-        if (!miss) { miss = true; [...box.children][opts.indexOf(it.kana)].classList.add('hint'); }
         speak(y);
       }
     });
@@ -4385,6 +4462,14 @@ function mapBox(id) {
   const w = Math.max(x1 - x0, 30), h = Math.max(y1 - y0, 30), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
   return { cx, cy, w: w * 1.35, h: h * 1.35 };
 }
+// 駅 i の まわり（まえ・うしろ k えき。わの 路線は つながる）が はいる はんい
+function mapBoxAround(id, i, k = 3) {
+  const p = MAP_XY[id], n = p.length, loop = LINEMAP[id].loop, idx = [];
+  for (let d = -k; d <= k; d++) { const j = i + d; if (loop) idx.push((j + n) % n); else if (j >= 0 && j < n) idx.push(j); }
+  const xs = idx.map(j => p[j][0]), ys = idx.map(j => p[j][1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  return { cx: p[i][0], cy: p[i][1], w: Math.max((x1 - x0) * 1.5, Math.abs(p[i][0] - x0) * 2.6, Math.abs(x1 - p[i][0]) * 2.6, 30), h: Math.max((y1 - y0) * 1.5, Math.abs(p[i][1] - y0) * 2.6, Math.abs(y1 - p[i][1]) * 2.6, 30) };
+}
 // ぜんぶの 駅（おなじ 名前で 1.7km より ちかい ものは 1つ）。おおきく した ときに だす
 let ALL_STOPS = null;
 function allStops() {
@@ -4400,22 +4485,44 @@ function allStops() {
 // ちずの 部品。box に svg を つくる
 //   lid：えらんだ 路線、script：名前の もじ（h・k）、hide：名前を ださない 駅の 漢字（クイズの こたえ）、target：きいろく する 駅の ばんごう
 //   onStop(i)：えらんだ 路線の 駅を さわった、onLine(id)：グレーの 路線を さわった（なければ なにも しない）
-function mapWidget(box, { lid, script = 'h', hide = null, target = -1, onStop, onLine }) {
+//   第46版：named＝名前を だす 駅の ばんごう（なければ ぜんぶ）、start＝はじめに まんなかに する 駅（まわりを おおきく して はじめる）、small＝ちいさな ちず（字と まるを ちいさく）。
+//   まじわる 路線（おなじ 名前の 駅を とおる）は その いろで うすく
+function mapWidget(box, { lid, script = 'h', hide = null, target = -1, onStop, onLine, named = null, start = -1, small = false }) {
   const line = LINEMAP[lid], pts = MAP_XY[lid], others = ALL_LINES.filter(l => l.id !== lid);
   const nm = y => script === 'k' ? toK(y) : y;
   box.innerHTML = `<svg class="mapsvg" role="img" aria-label="${esc(line.kanji)}の ろせんず">
     <text class="msea" x="860" y="960">とうきょうわん</text>
-    <g class="mo">${others.map(l => `<polyline points="${mapPoly(l.id)}"/>`).join('')}</g>
+    <g class="mo">${others.map(l => crossLines(lid).has(l.id) ? `<polyline class="x" style="stroke:${l.color}" points="${mapPoly(l.id)}"/>` : `<polyline points="${mapPoly(l.id)}"/>`).join('')}</g>
     <g class="mhit">${others.map(l => `<polyline data-l="${l.id}" points="${mapPoly(l.id)}"/>`).join('')}</g>
     <polyline class="msel" points="${mapPoly(lid)}" style="stroke:${line.color}"/>
     <g class="mall"></g>
-    <g class="mstops">${line.stations.map(([k, y], i) => `<g class="mstop${i === target ? ' me' : ''}" data-s="${i}"><circle cx="${pts[i][0]}" cy="${pts[i][1]}"/><text x="${pts[i][0]}" y="${pts[i][1]}">${k === hide ? '<tspan class="mk">？</tspan><tspan class="mj"></tspan>' : `<tspan class="mk">${nm(y)}</tspan><tspan class="mj">${k === nm(y) ? '' : esc(k)}</tspan>`}</text></g>`).join('')}</g>
+    <g class="mstops">${line.stations.map(([k, y], i) => `<g class="mstop${i === target ? ' me' : ''}" data-s="${i}"><circle cx="${pts[i][0]}" cy="${pts[i][1]}"/><text x="${pts[i][0]}" y="${pts[i][1]}">${named && !named.includes(i) && i !== target ? '<tspan class="mk"></tspan><tspan class="mj"></tspan>' : k === hide ? '<tspan class="mk">？</tspan><tspan class="mj"></tspan>' : `<tspan class="mk">${nm(y)}</tspan><tspan class="mj">${k === nm(y) ? '' : esc(k)}</tspan>`}</text></g>`).join('')}</g>
   </svg>`;
   const svg = box.querySelector('svg'), stops = [...svg.querySelectorAll('.mstop')], allG = svg.querySelector('.mall');
   // えらんだ 路線の 駅（おなじ 名前で 1.7km より ちかい ものは ほかの 路線の 駅として ださない）
   const onSel = a => line.stations.some(([k], i) => k === a.k && Math.hypot(pts[i][0] - a.x, pts[i][1] - a.yy) < 15);
-  let vb = mapBox(lid), shownKey = '';
+  let vb = start >= 0 ? mapBoxAround(lid, start) : mapBox(lid), shownKey = '';
+  const F = small ? 0.8 : 1;   // ちいさな ちずは 字と まるを ちいさく
   // ほかの 路線の 駅：おおきく した ときだけ、みえて いる ところに（おおすぎる ときは 250 まで）
+  // 名前の ばしょ：みぎ・ひだり・うえ・した…の じゅんに、もう おいた 名前や 駅の まると かさならない ところ（がめんの px で かんがえる）
+  const CANDS = [[11, 5, 'start'], [-11, 5, 'end'], [0, -12, 'middle'], [0, 21, 'middle'], [9, -8, 'start'], [9, 17, 'start'], [-9, -8, 'end'], [-9, 17, 'end']];
+  let placed = [];
+  const hit = b => placed.some(p => b[0] < p[2] && b[2] > p[0] && b[1] < p[3] && b[3] > p[1]);
+  // must＝おけなくても かならず だす（あてる 駅・名前を だす 駅）。ほかは おく ところが なければ ださない（おおきく すると でる）
+  function spot(x, y, w, h, u, k = 1, must = false) {
+    const X = x / u, Y = y / u;
+    let first = null;
+    for (const [dx0, dy0, an] of CANDS) {
+      const dx = dx0 * k, dy = dy0 * (dy0 < 0 ? k : 1), bx = an === 'start' ? X + dx : an === 'end' ? X + dx - w : X - w / 2;
+      const b = [bx, Y + dy - h + 3, bx + w, Y + dy + 3];
+      if (!first) first = [dx, dy, an, b];
+      if (!hit(b)) { placed.push(b); return [dx, dy, an]; }
+    }
+    if (!must) return null;
+    placed.push(first[3]);
+    return first.slice(0, 3);
+  }
+  const textW = (kana, kanji, fs, fs2) => [...kana].length * fs + (kanji ? 5 + [...kanji].length * fs2 : 0);
   function drawAll(u) {
     if (u > MAP_NAMES) { if (shownKey) { allG.innerHTML = ''; shownKey = ''; } return; }
     const x0 = vb.cx - vb.w / 2, x1 = vb.cx + vb.w / 2, y0 = vb.cy - vb.h / 2, y1 = vb.cy + vb.h / 2;
@@ -4424,8 +4531,14 @@ function mapWidget(box, { lid, script = 'h', hide = null, target = -1, onStop, o
     const key = list.length + ':' + u.toFixed(4) + ':' + (list[0] ? list[0].k : '');
     if (key === shownKey) return;
     shownKey = key;
-    allG.innerHTML = list.map(a => `<g class="ms2" data-a="${esc(a.y)}"><circle cx="${a.x}" cy="${a.yy}" r="${4.5 * u}" stroke-width="${2 * u}"/>
-      <text x="${a.x + 8 * u}" y="${a.yy + 4 * u}" font-size="${12 * u}" stroke-width="${3.5 * u}">${a.k === hide ? '？' : `${nm(a.y)}<tspan font-size="${9 * u}" dx="${4 * u}">${a.k === nm(a.y) ? '' : esc(a.k)}</tspan>`}</text></g>`).join('');
+    list.forEach(a => placed.push([a.x / u - 5, a.yy / u - 5, a.x / u + 5, a.yy / u + 5]));
+    allG.innerHTML = list.map(a => {
+      const kj = a.k === hide || a.k === nm(a.y) ? '' : a.k, sp = spot(a.x, a.yy, a.k === hide ? 12 : textW(nm(a.y), kj, 12, 9) - 1, 13, u, 0.75);
+      if (!sp) return `<g class="ms2" data-a="${esc(a.y)}"><circle cx="${a.x}" cy="${a.yy}" r="${4.5 * u}" stroke-width="${2 * u}"/><text></text></g>`;
+      const [dx, dy, an] = sp;
+      return `<g class="ms2" data-a="${esc(a.y)}"><circle cx="${a.x}" cy="${a.yy}" r="${4.5 * u}" stroke-width="${2 * u}"/>
+      <text x="${a.x + dx * u}" y="${a.yy + (dy - 1) * u}" text-anchor="${an}" font-size="${12 * u}" stroke-width="${3.5 * u}">${a.k === hide ? '？' : `${nm(a.y)}<tspan font-size="${9 * u}" dx="${4 * u}">${esc(kj)}</tspan>`}</text></g>`;
+    }).join('');
   }
   function draw() {
     const W = svg.clientWidth || 600, H = svg.clientHeight || 400;
@@ -4433,11 +4546,21 @@ function mapWidget(box, { lid, script = 'h', hide = null, target = -1, onStop, o
     vb.h = vb.w * H / W;
     svg.setAttribute('viewBox', `${vb.cx - vb.w / 2} ${vb.cy - vb.h / 2} ${vb.w} ${vb.h}`);
     const u = vb.w / W;   // がめんの 1px
-    stops.forEach((g, i) => {
-      const [x, y] = pts[i], c = g.firstChild, t = g.lastChild, me = i === target;
-      c.setAttribute('r', (me ? 11 : 7) * u); c.setAttribute('stroke-width', 3 * u);
-      t.setAttribute('x', x + (me ? 15 : 11) * u); t.setAttribute('y', y + 5 * u); t.setAttribute('font-size', 16 * u); t.setAttribute('stroke-width', 4 * u);
-      t.lastChild.setAttribute('font-size', 11 * u); t.lastChild.setAttribute('dx', 5 * u);
+    // さきに 駅の まるを おいて から、あてる 駅 → ほかの 駅 の じゅんに 名前を おく（かさならない ように ずらす）
+    placed = pts.map(([x, y], i) => { const r = (i === target ? 11 : 7) * F; return [x / u - r, y / u - r, x / u + r, y / u + r]; });
+    const order = target >= 0 ? [target, ...stops.map((_, i) => i).filter(i => i !== target)] : stops.map((_, i) => i);
+    order.forEach(i => {
+      const g = stops[i], [x, y] = pts[i], c = g.firstChild, t = g.lastChild, me = i === target;
+      c.setAttribute('r', (me ? 11 : 7) * F * u); c.setAttribute('stroke-width', 3 * F * u);
+      t.setAttribute('font-size', 16 * F * u); t.setAttribute('stroke-width', 4 * F * u);
+      t.lastChild.setAttribute('font-size', 11 * F * u); t.lastChild.setAttribute('dx', 5 * F * u);
+      const kana = t.firstChild.textContent, kanji = t.lastChild.textContent;
+      if (!kana) return;
+      const sp = spot(x, y, textW(kana, kanji, 16 * F, 11 * F), 17 * F, u, (me ? 1.4 : 1) * F, me || !!named || g.classList.contains('now'));
+      t.style.display = sp ? '' : 'none';
+      if (!sp) return;
+      const [dx, dy, an] = sp;
+      t.setAttribute('x', x + dx * u); t.setAttribute('y', y + dy * u); t.setAttribute('text-anchor', an);
     });
     svg.querySelector('.msea').setAttribute('font-size', 20 * u);
     drawAll(u);
@@ -4468,7 +4591,8 @@ function mapWidget(box, { lid, script = 'h', hide = null, target = -1, onStop, o
       pinch = d;
     }
   });
-  const sayStop = i => { stops.forEach((g, k) => g.classList.toggle('now', k === i && k !== target)); if (onStop) onStop(i); };
+  // さわった 駅は きいろく して、名前を かならず だす
+  const sayStop = i => { stops.forEach((g, k) => g.classList.toggle('now', k === i && k !== target)); if (onStop) onStop(i); draw(); };
   svg.addEventListener('pointerup', e => {
     if (!ptr.has(e.pointerId)) return;
     ptr.delete(e.pointerId);
@@ -4482,7 +4606,7 @@ function mapWidget(box, { lid, script = 'h', hide = null, target = -1, onStop, o
   svg.addEventListener('wheel', e => { e.preventDefault(); const r = svg.getBoundingClientRect(); zoom(e.deltaY > 0 ? 1.2 : 1 / 1.2, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height); }, { passive: false });
   return {
     zoomIn: () => zoom(1 / 1.6, 0.5, 0.5), zoomOut: () => zoom(1.6, 0.5, 0.5), fit: () => { vb = mapBox(lid); draw(); },
-    focus: (i, w = 60) => { vb.cx = pts[i][0]; vb.cy = pts[i][1]; vb.w = Math.min(vb.w, w); draw(); sayStop(i); },
+    focus: (i, w = 120) => { vb.cx = pts[i][0]; vb.cy = pts[i][1]; vb.w = Math.min(vb.w, w); vb.h = 0; sayStop(i); },
     get vb() { return vb; }
   };
 }
@@ -4512,19 +4636,6 @@ function openMap(lid = st.mapl) {
   // したの 駅の ならび：さわると その 駅を まんなかに
   v.querySelectorAll('.mst').forEach(b => b.addEventListener('click', () => m.focus(+b.dataset.s)));
   setTimeout(() => { if (view === 'map') speak(line.kana); }, 300);
-}
-// えきめいクイズの おおきな ちず：ちいさな ちずを さわると ひらく。こたえの 駅の 名前は「？」
-function quizBigMap(it = quiz.list[quiz.i], s = quiz.s) {
-  const line = it.line;
-  const b = overlay(`<div class="qbig"><div class="mapbox" style="--lc:${line.color}"><div class="mapholder" id="qMapHolder"></div>${mapZoomBtns(line.sym)}</div>
-    <p>ゆびで うごかしたり、2ほんの ゆびで おおきく したり できるよ</p>
-    <button class="btn big" type="button" id="qMapClose">とじる</button></div>`);
-  const m = mapWidget(b.querySelector('#qMapHolder'), {
-    lid: line.id, script: s, hide: it.kanji, target: it.i,
-    onStop: i => { if (i === it.i) speak('この えきは なにかな'); else speak(line.stations[i][1]); }
-  });
-  bindZoom(b, m);
-  b.querySelector('#qMapClose').addEventListener('click', () => { hush(); closeOverlay(); });
 }
 
 /* ================= ランダムえき ================= */
@@ -4881,9 +4992,9 @@ function freeYoon(u) {
   go('stage', `じゆうれんしゅう　${u}`, 'write');
   writeSession({
     items, mode: free ? 'free' : 'trace', peek: free,
-    top: k => `<div class="st-band" style="--lc:var(--mg)"><b style="font:900 1.15rem var(--font-ui)">「${u}」を かこう</b></div>${wordPills(u, chars.map((_, i) => i), k, true)}`,
-    goalText: k => k === 0 ? `まず「${chars[0]}」、つぎに ちいさい「${chars[1]}」` : `ちいさい「${chars[1]}」は マスの ひだり したに ちいさく`,
-    say: k => k === 0 ? `${yoonSay(u)}。${chars[0]}` : smallSay(chars[1]),
+    top: (k, n) => `<div class="st-band" style="--lc:var(--mg)"><b style="font:900 1.15rem var(--font-ui)">「${u}」を かこう</b></div>${wordPills(u, chars.map((_, i) => i), k, true, n)}`,
+    goalText: () => `ひだりの マスに「${chars[0]}」、みぎの マスに ちいさい「${chars[1]}」（マスの ひだり したに ちいさく）`,
+    say: () => yoonSay(u),
     onDone: () => { openFree(); setTimeout(() => { const e = $('#g3'); if (e) e.scrollIntoView({ block: 'center' }); }, 50); }
   });
 }
@@ -4984,9 +5095,9 @@ function freeWord(o, c) {
   go('stage', `じゆうれんしゅう　${w}`, 'write');
   writeSession({
     items, mode: free ? 'free' : 'trace', peek: free,
-    top: k => `<div class="st-band" style="--lc:var(--mg)"><span class="wemo">${o.e}</span><b style="font:900 1.15rem var(--font-ui)">「${c}」が でてくる ことば</b></div>${wordPills(w, blanks, k, true)}${o.k ? `<p class="qkanji">${esc(o.k)}</p>` : ''}`,
+    top: (k, n) => `<div class="st-band" style="--lc:var(--mg)"><span class="wemo">${o.e}</span><b style="font:900 1.15rem var(--font-ui)">「${c}」が でてくる ことば</b></div>${wordPills(w, blanks, k, true, n)}${o.k ? `<p class="qkanji">${esc(o.k)}</p>` : ''}`,
     goalText: k => `あと <b>${items.length - k}</b>もじ`,
-    say: k => k === 0 ? `${o.say}。${one(items[0].c)}` : one(items[k].c),
+    say: k => { const it = items[k], two = it.uf ? yoonSay(it.u) : one(it.c); return k === 0 ? `${o.say}。${two}` : two; },
     onDone: () => { openFree(); openKanaCard(c); }
   });
 }
