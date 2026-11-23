@@ -3098,12 +3098,18 @@ function paintMeter() {
 const leftMin = () => Math.max(1, Math.ceil((limitMs() - useToday().ms) / 60000));
 $('#useMeter').addEventListener('click', () => speak(`あと ${leftMin()}ふんで しゃこに かえるよ`));
 // みえている あいだだけ かぞえる（ていしゃ・しゃこの あいだは かぞえない）
+// 第51版：さわらない まま 3ぷん たったら かぞえない。がめんが ついた まま おいて あると ずっと かぞえて「705分」に なって いた
+//   （さいごに つかった とき＝last も さわった ときだけ すすめる。2じかん さわらなければ 0ふんに もどる）
+const IDLE_AFTER = 3 * 60000;
+let lastAct = Date.now();
+['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, () => { lastAct = Date.now(); }, true));
 setInterval(() => {
   const now = Date.now(), dt = Math.min(now - lastTick, 10000);
   lastTick = now;
   if (document.hidden) return;
   if (locked) { checkpoint(); return; }   // 2じかん たったら あける
   if (!$('#rest').hidden) return;
+  if (now - lastAct > IDLE_AFTER) return;
   const u = useToday(); u.ms += dt; u.last = now; sinceRest += dt;
   paintMeter();
   if (now - savedTick > 15000) { savedTick = now; save(); }
@@ -3170,7 +3176,9 @@ function showDepot() {
       <p style="text-align:center">つづけて つかった じかん：${Math.round(useToday().ms / 60000)}分（${st.limit}分まで）。${reopenAt()}になると、のばさなくても また つかえます</p>
       <div class="row"><button class="btn" type="button" data-add="15">15分 のばす</button><button class="btn" type="button" data-add="30">30分 のばす</button><button class="btn" type="button" data-close>のばさない</button></div>`);
     b.querySelectorAll('[data-add]').forEach(x => x.addEventListener('click', () => {
-      useToday().extra = (useToday().extra || 0) + x.dataset.add * 60000;
+      // 第51版：のばすのは「いまから」15分・30分（つかった じかんが 上限を こえて いても すぐ しゃこに もどらない）
+      const u = useToday();
+      u.extra = Math.max(u.extra || 0, u.ms - st.limit * 60000) + x.dataset.add * 60000;
       warned = false; locked = false; save();
       el.hidden = true; $('#sheet').hidden = true; paintMeter(); openHome();
     }));
@@ -3399,7 +3407,7 @@ function openParent() {
     <div class="set-row"><b>発車メロディ</b><div class="seg" id="melSeg"><button type="button" data-v="1">ながす</button><button type="button" data-v="0">ながさない</button></div></div>
     <div class="set-row"><b>書いた字の判定</b><div class="seg" id="strictSeg"><button type="button" data-v="easy">やさしい</button><button type="button" data-v="normal">ふつう</button><button type="button" data-v="hard">きびしい</button></div></div>
     <div class="set-row"><b>続けて使える時間</b><div class="seg" id="limitSeg">${[20, 30, 45, 60, 0].map(n => `<button type="button" data-v="${n}">${n ? n + '分' : '決めない'}</button>`).join('')}</div></div>
-    <p style="font-size:.9rem;margin-top:-4px">いま続けて使っている時間：${Math.round(useToday().ms / 60000)}分。時間になると、区切りのいいところで「しゃこに かえる」画面になります。それ以上続けるときは、その画面の「おうちの かたへ」から延長してください。最後に使ってから2時間たつと、時間は0分にもどり、また普通に使えます。20分ごとに 20秒、遠くを見て目を休める「ていしゃ」が入ります。時間の変更は計算の答えを入れると操作できます。</p>
+    <p style="font-size:.9rem;margin-top:-4px">いま続けて使っている時間：${Math.round(useToday().ms / 60000)}分。時間になると、区切りのいいところで「しゃこに かえる」画面になります。それ以上続けるときは、その画面の「おうちの かたへ」から延長してください（延長はその時点から 15分・30分）。画面にさわらないまま3分たつと、時間は数えません。最後に使ってから2時間たつと、時間は0分にもどり、また普通に使えます。20分ごとに 20秒、遠くを見て目を休める「ていしゃ」が入ります。時間の変更は計算の答えを入れると操作できます。</p>
     <p><b>発車メロディの音源</b>：iPad の「ファイル」にある音源を読み込むと、選んだ駅を出発するときに流れます。音源はこの iPad の中だけに保存され、ネットには送られません。読み込んでいないときは、このアプリ用のオリジナルのメロディが流れます。ファイル名に駅名（白金高輪 など）が入っていると、その駅に自動で割り当てます。</p>
     <div class="row" style="margin-bottom:10px"><label class="btn sm" for="melFile">音源を読み込む</label>
       <input type="file" id="melFile" accept="audio/*" multiple style="position:absolute;width:1px;height:1px;opacity:0"></div>
